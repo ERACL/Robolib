@@ -33,7 +33,8 @@ void getPosition(struct PosData const* data) {
 	getConfig(&c);
   __pos_standardized.x = __position.x * c->mmPerEncode;
   __pos_standardized.y = __position.y * c->mmPerEncode;
-  __pos_standardized.orientation = __position.orientation;
+  __position.orientation = __position.orientation % (2 * pi);
+  __pos_standardized.orientation = __position.orientation * 180 / pi;
   *data = &__pos_standardized;
 }
 
@@ -41,7 +42,9 @@ task updatePosition() {
   while (true) {
     wait1Msec(20);
     float deltaR = nMotorEncoder[motorA] - __oldEncoderR;
+    __oldEncoderR = nMotorEncoder[motorA];
     float deltaL = nMotorEncoder[motorB] - __oldEncoderL;
+    __oldEncoderL = nMotorEncoder[motorB];
     float deltaD = (deltaR + deltaL) / 2;
     float deltaO = (deltaR - deltaL) / __betweenWheelsInEncode;
     float midO = __position.orientation + deltaO / 2;
