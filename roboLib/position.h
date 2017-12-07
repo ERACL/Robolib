@@ -40,11 +40,11 @@ void getPosition(struct PosData const* data) {
 task updatePosition() {
   while (true) {
     wait1Msec(20);
-    float deltaL = nMotorEncoder[motorB] - __oldEncoderL;
     float deltaR = nMotorEncoder[motorA] - __oldEncoderR;
-    float deltaD = (deltaL + deltaR) / 2;
+    float deltaL = nMotorEncoder[motorB] - __oldEncoderL;
+    float deltaD = (deltaR + deltaL) / 2;
     float deltaO = (deltaR - deltaL) / __betweenWheelsInEncode;
-    float midO = (__position.orientation + deltaO) / 2;
+    float midO = __position.orientation + deltaO / 2;
     __position.x += cos(midO) * deltaD;
     __position.y += sin(midO) * deltaD;
     __position.orientation += deltaO;

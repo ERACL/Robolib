@@ -4,14 +4,21 @@
 
 task main()
 {
-  initConfig(ERACL1_SMALL);
+  initConfig(TESTROBOT);
   initPosition(true);
   initMovement();
 
   struct PosData const* pos = NULL;
   getPosition(&pos);
+  nxtDisplayTextLine(1, "%f", pos->x);
+ 	nxtDisplayTextLine(2, "%f", pos->y);
+ 	nxtDisplayTextLine(3, "%f", pos->orientation);
 
- 	nxtDisplayTextLine(0, "%f\t%f\t%f", pos->x, pos->y, pos->orientation);
   straight(100);
- 	nxtDisplayTextLine(1, "%f\t%f\t%f", pos->x, pos->y, pos->orientation);
+  getPosition(&pos);
+ 	nxtDisplayTextLine(1, "%f", pos->x);
+ 	nxtDisplayTextLine(2, "%f", pos->y);
+ 	nxtDisplayTextLine(3, "%f", pos->orientation);
+
+ 	while(true) {}
 }
