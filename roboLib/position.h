@@ -33,8 +33,13 @@ void getPosition(struct PosData const* data) {
 	getConfig(&c);
   __pos_standardized.x = __position.x * c->mmPerEncode;
   __pos_standardized.y = __position.y * c->mmPerEncode;
-  __position.orientation = __position.orientation % (2 * pi);
-  __pos_standardized.orientation = __position.orientation * 180 / pi;
+  while (__position.orientation < 0) {
+  	__position.orientation += 2 * PI;
+  }
+  while (__position.orientation > 2 * PI) {
+  	__position.orientation -= 2 * PI;
+  }
+  __pos_standardized.orientation = __position.orientation * 180 / PI;
   *data = &__pos_standardized;
 }
 
