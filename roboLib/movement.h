@@ -75,8 +75,8 @@ void straight(float distance) {
 	bool shouldAbort = false;
 	while (!targetReached && !shouldAbort) {
 		motor[motorB]=40;
-		motor[motorA]=40;
-		wait1Msec(2000);
+		motor[motorA]=-30;
+		wait1Msec(1500);
 		motor[motorB]=0;
 		motor[motorA]=0;
 		targetReached = true;

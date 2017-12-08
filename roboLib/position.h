@@ -13,34 +13,35 @@ struct PosData {
 
 void initPosition(bool isGreenSide);
 
-//Renvoie un posData constenant les données de position du robot.
+//Renvoie un posData constenant les données de position du robot, en mm et degrés.
 void getPosition(struct PosData const** data);
+
+//Même chose en ticks d'encode et radians, plus rapide.
+void getRawPosition(struct PosData const** data);
 
 
 //-- DEBUT DES DEFINITIONS --
 
 
-PosData __position; //Contient en tout temps la __position du robot (régulièrement mise à jour) en tics d'encodage.
+PosData __position; //Contient en tout temps la position du robot (régulièrement mise à jour) en tics d'encodage.
 
-PosData __pos_standardized; //Contient la __position convertie en mm, ne pas utiliser ; mis à jour dans getPosition() uniquement.
+PosData __pos_standardized; //Contient la position convertie en mm, ne pas utiliser ; mis à jour dans getPosition() uniquement.
 
 float __oldEncoderL;
 float __oldEncoderR;
 float __betweenWheelsInEncode;
 
-void getPosition(struct PosData const* data) {
+void getPosition(struct PosData const** data) {
 	struct Config const* c = NULL;
 	getConfig(&c);
   __pos_standardized.x = __position.x * c->mmPerEncode;
   __pos_standardized.y = __position.y * c->mmPerEncode;
-  while (__position.orientation < 0) {
-  	__position.orientation += 2 * PI;
-  }
-  while (__position.orientation > 2 * PI) {
-  	__position.orientation -= 2 * PI;
-  }
   __pos_standardized.orientation = __position.orientation * 180 / PI;
   *data = &__pos_standardized;
+}
+
+void getRawPosition(struct PosData const** data) {
+	*data = &__position;
 }
 
 task updatePosition() {
@@ -56,6 +57,10 @@ task updatePosition() {
     __position.x += cos(midO) * deltaD;
     __position.y += sin(midO) * deltaD;
     __position.orientation += deltaO;
+    if (__position.orientation < 0)
+    	__position.orientation += 2*PI;
+  	else if (__position.orientation > 2*PI)
+  		__position.orientation -= 2*PI;
   }
 }
 
