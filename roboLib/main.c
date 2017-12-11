@@ -6,7 +6,6 @@ task main()
 {
   initConfig(TESTROBOT);
   initPosition(true);
-  initMovement();
 
   struct PosData const* pos = NULL;
   getPosition(&pos);
