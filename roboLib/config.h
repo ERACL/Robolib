@@ -65,7 +65,7 @@ void initConfig(enum Robot robot) {
   		__config.initialX_GreenSide = 0;
   		__config.initialY_GreenSide = 0;
   		__config.sensorFront = 0;
-  		__config.sensofBack = 0;
+  		__config.sensorBack = 0;
   		break;
   	}
     case ERACL1_SMALL: {
