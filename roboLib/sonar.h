@@ -7,6 +7,7 @@
 
 #include "config.h"
 
+// Les deux fonctions suivantes permettent d'obtenir la distance (en mm) entre le sonar avant (respectivement arriere) du robot et l'obstacle detecte.
 
 float getObstacleDistanceFront();
 float getObstacleDistanceBack();
