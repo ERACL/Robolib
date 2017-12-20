@@ -10,53 +10,27 @@
 
 float getObstacleDistanceFront();
 float getObstacleDistanceBack();
-void initSonar(enum Robot robot);
 
 
 //-- DEBUT DES DEFINITIONS --
 
-void initSonar(enum Robot robot) {
-  switch (robot) {
-  	case TESTROBOT: {
-  		__config.betweenWheels = 230;
-  		__config.mmPerEncode = 0.39834;
-  		__config.initialOrientation_GreenSide = 0;
-  		__config.initialX_GreenSide = 0;
-  		__config.initialY_GreenSide = 0;
-  		break;
-  	}
-    case ERACL1_SMALL: {
-      break;
-    }
-    case ERACL1_BIG: {
-      break;
-    }
-    case ERACL2_SMALL: {
-      break;
-    }
-    case ERACL2_BIG: {
-      break;
-    }
-  }
+float getObstacleDistanceFront() {
+	struct Config const* c = NULL;
+	getConfig(&c);
+	if (c->sensorFront == 0)
+		return -1
+	else
+		return 10*SensorValue(front);
 }
 
-struct Config const* c = NULL;
-getConfig(&c);
-
-float getObstacleDistanceFront() {
-	bool a = c->sensorFront;
-	if (a == 0)
-		return -1
-	else
-		return SensorValue(front);
-
 float getObstacleDistanceBack() {
-	bool a = c->sensorBack;
-	if (a == 0)
+	struct Config const* c = NULL;
+	getConfig(&c);
+	if (c->sensorBack == 0)
 		return -1
 	else
-		return SensorValue(back);
-
+		return 10*SensorValue(back);
+}
 
 
 #endif
