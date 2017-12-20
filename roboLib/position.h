@@ -3,8 +3,8 @@
 
 #include "config.h"
 
-//Structure de données de position.
-//Distances en mm, angles en degrés.
+//Structure de donnees de position.
+//Distances en mm, angles en degres.
 struct PosData {
 	float x;
 	float y;
@@ -13,19 +13,19 @@ struct PosData {
 
 void initPosition(bool isGreenSide);
 
-//Renvoie un posData constenant les données de position du robot, en mm et degrés.
+//Renvoie un posData constenant les donnees de position du robot, en mm et degres.
 void getPosition(struct PosData const** data);
 
-//Même chose en ticks d'encode et radians, plus rapide.
+//Meme chose en ticks d'encode et radians, plus rapide.
 void getRawPosition(struct PosData const** data);
 
 
 //-- DEBUT DES DEFINITIONS --
 
 
-PosData __position; //Contient en tout temps la position du robot (régulièrement mise à jour) en tics d'encodage.
+PosData __position; //Contient en tout temps la position du robot (regulierement mise Ã  jour) en tics d'encodage.
 
-PosData __pos_standardized; //Contient la position convertie en mm, ne pas utiliser ; mis à jour dans getPosition() uniquement.
+PosData __pos_standardized; //Contient la position convertie en mm, ne pas utiliser ; mis a jour dans getPosition() uniquement.
 
 float __oldEncoderL;
 float __oldEncoderR;
