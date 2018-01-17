@@ -69,12 +69,12 @@ void initConfig(enum Robot robot) {
   	}
     	case JIMMY: {
 	      	__config.betweenWheels = 150;
-  		__config.mmPerEncode = ;
+  		__config.mmPerEncode = 0.51487;
   		__config.initialOrientation_GreenSide = 0;
   		__config.initialX_GreenSide = 0;
   		__config.initialY_GreenSide = 0;
-  		__config.sensorFront = ;
-  		__config.sensorBack = ;
+  		__config.sensorFront = 1;
+  		__config.sensorBack = 0;
   		break;
     	}
     	case OBELIX: {
