@@ -22,7 +22,7 @@ struct Config {
 };
 
 enum Robot {
-  TESTROBOT, ERACL1_SMALL, ERACL1_BIG, ERACL2_SMALL, ERACL2_BIG
+  TESTROBOT, JIMMY, OBELIX, TULLIUS, ROCCO
 };
 
 void initConfig(enum Robot robot); //A effectuer en TOUT DEBUT DE PROGRAMME, avant les autres initialisations (initPosition()...), qui en dependent.
@@ -66,18 +66,31 @@ void initConfig(enum Robot robot) {
   		__config.initialY_GreenSide = 0;
   		__config.sensorFront = 0;
   		__config.sensorBack = 0;
-  		break;
   	}
-    case ERACL1_SMALL: {
+    	case JIMMY: {
+	      	__config.betweenWheels = 150;
+  		__config.mmPerEncode = ;
+  		__config.initialOrientation_GreenSide = 0;
+  		__config.initialX_GreenSide = 0;
+  		__config.initialY_GreenSide = 0;
+  		__config.sensorFront = ;
+  		__config.sensorBack = ;
+  		break;
+    	}
+    	case OBELIX: {
+      	      	__config.betweenWheels = 230;
+  		__config.mmPerEncode = 0.40249;
+  		__config.initialOrientation_GreenSide = 0;
+  		__config.initialX_GreenSide = 0;
+  		__config.initialY_GreenSide = 0;
+  		__config.sensorFront = 1;
+  		__config.sensorBack = 1;
+  		break;
+    	}
+    case TULLIUS: {
       break;
     }
-    case ERACL1_BIG: {
-      break;
-    }
-    case ERACL2_SMALL: {
-      break;
-    }
-    case ERACL2_BIG: {
+    case ROCCO: {
       break;
     }
   }
