@@ -9,6 +9,7 @@ struct PosData {
 	float x;
 	float y;
 	float orientation;
+	float traveledDistance; //Distance parcourue vers l'avant du robot (peut diminuer si le robot va vers l'arrière) ; utile pour l'asservissement.
 }
 
 void initPosition(bool isGreenSide);
@@ -16,14 +17,15 @@ void initPosition(bool isGreenSide);
 //Renvoie un posData constenant les donnees de position du robot, en mm et degres.
 void getPosition(struct PosData const** data);
 
-//Meme chose en ticks d'encode et radians, plus rapide.
+//Meme chose en ticks d'encode et radians, plus rapide car sans conversion.
 void getRawPosition(struct PosData const** data);
 
 
 //-- DEBUT DES DEFINITIONS --
 
+const unsigned int positionUpdatePeriod = 20; //En ms.
 
-PosData __position; //Contient en tout temps la position du robot (regulierement mise Ã  jour) en tics d'encodage.
+PosData __position; //Contient en tout temps la position du robot (regulierement mise a jour) en tics d'encodage.
 
 PosData __pos_standardized; //Contient la position convertie en mm, ne pas utiliser ; mis a jour dans getPosition() uniquement.
 
@@ -37,6 +39,7 @@ void getPosition(struct PosData const** data) {
   __pos_standardized.x = __position.x * c->mmPerEncode;
   __pos_standardized.y = __position.y * c->mmPerEncode;
   __pos_standardized.orientation = __position.orientation * 180 / PI;
+  __pos_standardized.traveledDistance = __position.traveledDistance * c->mmPerEncode;
   *data = &__pos_standardized;
 }
 
@@ -46,7 +49,7 @@ void getRawPosition(struct PosData const** data) {
 
 task updatePosition() {
   while (true) {
-    wait1Msec(20);
+    wait1Msec(positionUpdatePeriod);
     float deltaR = nMotorEncoder[motorA] - __oldEncoderR;
     __oldEncoderR = nMotorEncoder[motorA];
     float deltaL = nMotorEncoder[motorB] - __oldEncoderL;
@@ -61,6 +64,7 @@ task updatePosition() {
     	__position.orientation += 2*PI;
   	else if (__position.orientation > 2*PI)
   		__position.orientation -= 2*PI;
+  	__position.traveledDistance += deltaD;
   }
 }
 
@@ -78,6 +82,7 @@ void initPosition(bool isGreenSide) {
     __position.y = c->initialY_OrangeSide;
     __position.orientation = c->initialOrientation_OrangeSide;
   }
+  __position.traveledDistance = 0;
   nMotorEncoder[motorB] = 0;
   nMotorEncoder[motorA] = 0;
   __oldEncoderL = 0;

@@ -6,12 +6,10 @@
 
 /* Bibliotheque de mouvement haut-niveau et bas niveau.
  * La partie bas niveau effectue des deplacements en s'arretant en cas d'obstacles, et gere l'asservissement des moteurs.
- * La partie haut niveau permet au robot d'aller d'un point A a un point B en gerant les obstacles de façon optimale.
+ * La partie haut niveau permet au robot d'aller d'un point A a un point B en gerant les obstacles de facon optimale.
  */
 
 //Partie haut niveau
-
-const float timeout = 10000;
 
 /* moveTo() trouve les mouvements individuels optimaux pour aller jusqu'a la destination.
  * les obstacles sont geres (et le mouvement retente) tant que le mouvement n'a pas excede la valeur de timeout, auquel cas false sera renvoye.
@@ -19,7 +17,7 @@ const float timeout = 10000;
  */
 bool moveTo(struct PosData const* target, bool ignoreOrientation = false);
 
-//moveTo préfère utiliser arc() pour economiser des mouvements ; ici, des straight() seront utilises.
+//moveTo prefere utiliser arc() pour economiser des mouvements ; ici, des straight() seront utilises.
 bool moveTo_forceStraight(struct PosData const* target, bool ignoreOrientation = false);
 
 //Partie bas-niveau
@@ -30,7 +28,6 @@ bool moveTo_forceStraight(struct PosData const* target, bool ignoreOrientation =
  * DONE : mouvement correctement effectue ;
  * FAILED_OBS : mouvement echoue du fait d'un obstacle rencontre ;
  * FAILED_OTHER : mouvement echoue pour une autre raison (batterie faible, etc.).
- * Les etats TBD et ONGOING ne devraient normalement pas etre observes, mais peuvent etre utiles pour du debuggage.
  */
 enum MovementState {
 	TBD, ONGOING, DONE, FAILED_OBS, FAILED_OTHER
@@ -41,7 +38,7 @@ struct MovementResult { //Mettre dans cette structure toutes les donnees qu'un m
 };
 
 /* Trois fonctions de mouvement principales : straight, arc et rotate.
- * Elles modifient MovementResult qui contient les donnees du déplacement.
+ * Elles modifient MovementResult qui contient les donnees du deplacement.
  * Il faudra eventuellement relancer un mouvement a la suite de l'execution d'une fonction de mouvement (s'il ne s'est pas effectue correctement).
  * On s'appuiera alors sur getPosition et sur des donnees externes d'emplacement de la cible.
  */
@@ -60,7 +57,7 @@ void getMovementResult(struct MovementResult const** r);
 // ---------- CONSTANTES A MODIFIER ----------
 
 /* minSpeed : vitesse minimale pour laquelle laquelle les moteurs bougent.
- * maxAcceleration : accelération maximale permettant d'eviter les glissements.
+ * maxAcceleration : acceleration maximale permettant d'eviter les glissements.
  * maxSpeed : vitesse plafond du robot.
  * securityDistance : distance a un obstacle que le robot essaiera de respecter.
  * Une distance de securite trop faible fera eventuellement depasser maxAcceleration.
@@ -79,6 +76,8 @@ const float errorMarginAngle = 2;
 
 //Angle maximal pour lequel le robot choisit d'effectuer un arc de cercle plutot que de tourner sur soi-meme avant, en degres, durant l'execution de moveTo().
 const float maxAngleForArc = 35;
+
+const unsigned int controlPeriod = 20; //Temps entre deux asservissements, en ms.
 
 // ---------- FIN DES CONSTANTES A MODIFIER ----------
 
@@ -136,6 +135,7 @@ bool moveTo_forceStraight(struct PosData const* target, bool ignoreOrientation) 
 	return true;
 }
 
+/*
 void straight(float distance) {
 	bool targetReached = false;
 	bool shouldAbort = false;
@@ -148,6 +148,19 @@ void straight(float distance) {
 		targetReached = true;
 	}
 };
+*/
+
+void straight(float distance) {
+	struct Config const* c = NULL;
+	getConfig(&c);
+	struct PosData const* pos = NULL;
+
+	bool targetReached = false;
+	bool shouldAbort = false;
+	while (!targetReached && !shouldAbort) {
+
+	}
+}
 
 void arc(float distance, float angle) {
 	bool targetReached = false;
