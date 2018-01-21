@@ -2,10 +2,9 @@
 #define CONFIG_H
 
 /* Configurations des constantes des robots.
- * Dans la struct Config sont recensees toutes les constantes dependantes du robot (notamment les constantes geometriques.
- * Elles sont a remplir dans config.c pour chaque robot. La configuration est chargee en debut de programme avec initCo
+ * Dans la struct Config sont recensees toutes les constantes dependant du robot (notamment les constantes geometriques).
+ * Elles sont a remplir dans la partie definition pour chaque robot. La configuration est chargee en debut de programme avec initConfig.
  * Les constantes sont ensuite obtenues dans tout le programme via getConfig().
- * Exemple : getConfig().mmPerEncode donne le nombre de mm par unite de l'encodeur incremental pour le robot choisi avec initConfig.
  */
 
 struct Config {
@@ -19,6 +18,13 @@ struct Config {
   float initialOrientation_OrangeSide;
   bool sensorFront;
   bool sensorBack;
+
+  //Constantes utilisees dans l'asservissement
+  float maxAcceleration; //Acceleration maximale autorisee (pour eviter les glissements)
+  float K_m; //Gain du moteur
+  float tau_m //Temps caracteristique du moteur (1er ordre)
+  float K_p; //Gain de la partie proportionnelle du correcteur
+  float K_i; //Gain de la partie integrateur du correcteur
 };
 
 enum Robot {
@@ -29,10 +35,10 @@ void initConfig(enum Robot robot); //A effectuer en TOUT DEBUT DE PROGRAMME, ava
 
 void getConfig(struct Config const** c);
 
-/* getConfig() devrait renvoyer un pointeur vers une struct const, mais c'est impossible avec le compilateur de robotC, qui a visiblement ete code par un 
+/* getConfig() devrait renvoyer un pointeur vers une struct const, mais c'est impossible avec le compilateur de robotC, qui a visiblement ete code par des singes.
  * Il faut donc passer en argument un pointeur vers ce pointeur !
- * De plus robotC croit que le pointeur vers la struct est lui-meme const, ce qui necessite de l'initialiser avec NULL sous peine d'erreur de compilation
- * Cette syntaxe se retrouvera dans toutes les fonctions de la bibliotheque qui renvoient des structures
+ * De plus robotC croit que le pointeur vers la struct est lui-meme const, ce qui necessite de l'initialiser avec NULL sous peine d'erreur de compilation !
+ * Cette syntaxe se retrouvera dans toutes les fonctions de la bibliotheque qui sont censees renvoyer des structures.
  *
  * Exemple d'utilisation :
  *
@@ -42,12 +48,14 @@ void getConfig(struct Config const** c);
  */
 
 
-/* On rajoute le code normalement dans les .c a la fin des .h, devinez pourquoi
+/* On rajoute le code normalement dans les .c a la fin des .h, devinez pourquoi.
  * ...
  * Si, si...
  * RobotC.
- * En consequence, toute variable normalement limitee au .c non-const suivront la syntaxe __nomDeVariable
+ * En consequence, toute variable normalement limitee au .c non-const suivront la syntaxe __nomDeVariable.
  */
+
+//On notera enfin que l'absence de caracteres speciaux dans la bibliotheque est elle aussi due a RobotC.
 
 
 //-- DEBUT DES DEFINITIONS --

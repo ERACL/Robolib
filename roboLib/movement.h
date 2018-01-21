@@ -56,10 +56,7 @@ void getMovementResult(struct MovementResult const** r);
 
 // ---------- CONSTANTES A MODIFIER ----------
 
-/* minSpeed : vitesse minimale pour laquelle laquelle les moteurs bougent.
- * maxAcceleration : acceleration maximale permettant d'eviter les glissements.
- * maxSpeed : vitesse plafond du robot.
- * securityDistance : distance a un obstacle que le robot essaiera de respecter.
+/* securityDistance : distance a un obstacle que le robot essaiera de respecter.
  * Une distance de securite trop faible fera eventuellement depasser maxAcceleration.
  * errorMarginDistance : marge d'erreur acceptable en distance a une cible a la fin du mouvement.
  * errorMarginAngle : marge d'erreur acceptable en angle a une cible a la fin du mouvement.
@@ -67,9 +64,6 @@ void getMovementResult(struct MovementResult const** r);
  * Distances en mm, temps en s, angles en degres.
  */
 
-const float minSpeed = 50;
-const float maxAcceleration = 700;
-const float maxSpeed = 1000;
 const float securityDistance = 50;
 const float errorMarginDistance = 10;
 const float errorMarginAngle = 2;
@@ -154,10 +148,13 @@ void straight(float distance) {
 	struct Config const* c = NULL;
 	getConfig(&c);
 	struct PosData const* pos = NULL;
+	getPosition(&pos);
+	float zeroDistance = pos->traveledDistance;
 
 	bool targetReached = false;
 	bool shouldAbort = false;
 	while (!targetReached && !shouldAbort) {
+
 
 	}
 }
