@@ -1,51 +1,67 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+def limit(number, limit):
+    if number > limit:
+        return limit
+    elif number < -limit:
+        return -limit
+    else:
+        return number
+
 Te = 20
-T = 10000
+T = 5000
 N = int(T / Te)
 Km = 0.01
-Kp = 0.3
-Ki = 0.003
+Kp = 0.2
+Ki = 0.0008
 taum = 100
 mmPerEncode = 0.61
 minRegisteredPower = 5
 maxAllowedPowerDerivative = 0.2
-integralControlDistance = 10 / mmPerEncode
+maxAllowedPower = 50
+integralControlDistance = 15 / mmPerEncode
+targetDiff = 1 / mmPerEncode
 
 E = 500 / mmPerEncode
 S = np.zeros(N + 1)
 sumDeltaD = 0
-lastVc = 0
-lastV = 0
+VC = np.zeros(N + 1)
+V = np.zeros(N + 1)
+
+integralControl = False
 
 for i in range(1, N+1):
-    #S[i] = 1/taum*(Km*Kp*Te**2*E+Km*Te**2*(Ki*Te-Kp)*E-(Te-3*taum)*S[i-1]-(Km*Kp*Te**2-2*Te+3*taum)*S[i-2]-(Km*Ki*Te**3-Km*Kp*Te**2+Te-taum)*S[i-3])
     deltaD = (E - S[i-1])
-    if (abs(deltaD) < integralControlDistance):
+    if (abs(deltaD) < integralControlDistance and integralControl == False):
+        print("beep")
+        integralControl = True
+    if integralControl:
         sumDeltaD += deltaD * Te
-    
-    vc = Kp*deltaD + Ki * sumDeltaD    
-    
-    if vc - lastVc > maxAllowedPowerDerivative * Te:
-        vc = lastVc + maxAllowedPowerDerivative * Te
-    elif vc - lastVc < -maxAllowedPowerDerivative * Te:
-        vc = lastVc - maxAllowedPowerDerivative * Te
-    lastVc = vc
-    
-    if (abs(vc) < minRegisteredPower):
-        v = 0
-    else:
-        if vc > 50:
-            vc = 50
-        elif vc < -50:
-            vc = -50
-        v = Te / (taum + Te) * (Km*vc + taum / Te * lastV)
-    
-    lastV = v
-    S[i] = S[i-1] + v * Te
 
-plt.plot(np.linspace(0, T, N),S[1:]*mmPerEncode)
+    if abs(deltaD) < targetDiff:
+        VC[i] = 0
+    else:
+        VC[i] = limit(VC[i-1] + limit(Kp*deltaD + Ki*sumDeltaD - VC[i-1], maxAllowedPowerDerivative * Te), maxAllowedPower)
+
+    if (abs(VC[i]) < minRegisteredPower):
+        V[i] = 1 / (1 + (taum / Te)) * taum * V[i-1] / Te
+    else:
+        V[i] = 1 / (1 + (taum / Te)) * (Km * VC[i] + taum * V[i-1] / Te)
+        print(str(VC[i] - VC[i-1])[:6] +'\t'+ str((V[i] - V[i-1]) / Km)[:6])
+
+    S[i] = S[i-1] + V[i] * Te
+
+plt.subplot(131)
+plt.plot(np.linspace(0, T, N),np.ones(N)*E*mmPerEncode, 'b')
+plt.plot(np.linspace(0, T, N),S[1:]*mmPerEncode, 'r')
+plt.subplot(132)
+plt.plot(np.linspace(0, T, N),VC[1:], 'b')
+plt.plot(np.linspace(0, T, N),V[1:]/Km, 'r')
+plt.subplot(133)
+plt.plot(np.linspace(0, T, N),VC[1:] - VC[:N], 'b')
+plt.plot(np.linspace(0, T, N),(V[1:] - V[:N])/Km, 'r')
+
 print()
 print(S[i]*mmPerEncode)
 plt.show()
