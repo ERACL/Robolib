@@ -157,7 +157,7 @@ task straight_control() {
 	struct Config const* c = NULL;
 	getConfig(&c);
 
-	bool straight_integralControl = false;
+	bool integralControl = false;
 	float DDist = 0;
 	float DDistIntegral = 0;
 	float vc = 0;
@@ -184,10 +184,10 @@ task straight_control() {
 			motor[motorB] = 0;
 		}
 		else {
-			if (fabs(DDist) < c->integralControlDistance && straight_integralControl == false)
-				straight_integralControl = true;
+			if (fabs(DDist) < c->integralControlDistance && integralControl == false)
+				integralControl = true;
 
-			if (straight_integralControl)
+			if (integralControl)
 				DDistIntegral += DDist * controlPeriod;
 
 			vc = limit(vc + limit(c->K_p * DDist + c->K_i * DDistIntegral - vc, c->maxAllowedPowerDerivative * controlPeriod), c->maxAllowedPower);
@@ -200,7 +200,7 @@ task straight_control() {
 }
 
 void straight(float distance) {
-	while (__result.state == ONGOING) {}
+	while (__result.state == ONGOING) { wait1Msec(50); }
 	__result.state = ONGOING;
 	__result.type = STRAIGHT;
 	struct Config const* c = NULL;
@@ -220,13 +220,67 @@ void arc(float distance, float angle) {
 
 };
 
-void rotate(float angle) {
-	bool targetReached = false;
-	bool shouldAbort = false;
-	while (!targetReached && !shouldAbort) {
+float rotate_targetOrientation; //Angle a atteindre dans la tache rotate_control(), en radians (attention, donne en degres dans rotate())
 
+task rotate_control() {
+	struct PosData const* pos = NULL;
+	struct Config const* c = NULL;
+	getConfig(&c);
+
+	bool integralControl = false;
+	float DOrientation = 0;
+	float DDist = 0;
+	float DDistIntegral = 0;
+	float vc = 0;
+	float oldOrientation = 0;
+	int ciclesIdle = 0;
+	while (__result.state == ONGOING) {
+		wait1Msec(controlPeriod);
+		getRawPosition(&pos);
+		DOrientation = rotate_targetOrientation - pos->orientation;
+		DDist = DOrientation * c->betweenWheels / c->mmPerEncode;
+
+		if (fabs(pos->orientation - oldOrientation) < 0.0001)
+			ciclesIdle += 1;
+		else
+			ciclesIdle = 0;
+
+		if (ciclesIdle * controlPeriod > timeIdleFail) {
+			__result.state = FAILED_TIMEOUT;
+			motor[motorA] = 0;
+			motor[motorB] = 0;
+		}
+		if (ciclesIdle * controlPeriod > timeIdleWin && fabs(DOrientation) < c->errorMarginAngle) {
+			__result.state = DONE;
+			motor[motorA] = 0;
+			motor[motorB] = 0;
+		}
+		else {
+			if (fabs(DDist) < c->integralControlDistance && integralControl == false)
+				integralControl = true;
+
+			if (integralControl)
+				DDistIntegral += DDist * controlPeriod;
+
+			vc = limit(vc + limit(c->K_p * DDist / 2 + c->K_i * DDistIntegral / 2 - vc, c->maxAllowedPowerDerivative * controlPeriod), c->maxAllowedPower);
+
+			oldOrientation = pos->orientation;
+			motor[motorA] = (int)vc;
+			motor[motorB] = -(int)vc;
+		}
 	}
+}
 
+void rotate(float angle) {
+while (__result.state == ONGOING) { wait1Msec(50); }
+	__result.state = ONGOING;
+	__result.type = ROTATE;
+	struct Config const* c = NULL;
+	getConfig(&c);
+	struct PosData const* pos = NULL;
+	getRawPosition(&pos);
+	rotate_targetOrientation = pos->orientation + angle * PI / 180;
+	startTask(rotate_control);
 };
 
 void getMovementResult(struct MovementResult const** r) {

@@ -83,7 +83,7 @@ void initConfig(enum Robot robot) {
   		break;
   	}
     case JIMMY: {
-	    __config.betweenWheels = 150;
+	    __config.betweenWheels = 158;
   		__config.mmPerEncode = 0.53;
   		__config.initialOrientation_GreenSide = 0;
   		__config.initialX_GreenSide = 0;
@@ -97,6 +97,7 @@ void initConfig(enum Robot robot) {
   		__config.maxAllowedPower = 45;
   		__config.maxAllowedPowerDerivative = 0.1;
   		__config.errorMarginDistance = 3 / __config.mmPerEncode;
+  		__config.errorMarginAngle = PI / 180;
   		__config.integralControlDistance = 10 / __config.mmPerEncode;
   		break;
     }

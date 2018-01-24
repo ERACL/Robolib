@@ -64,10 +64,11 @@ task updatePosition() {
     __position.x += cos(midO) * deltaD;
     __position.y += sin(midO) * deltaD;
     __position.orientation += deltaO;
-    if (__position.orientation < 0)
+    /*
+	  if (__position.orientation < 0)
     	__position.orientation += 2*PI;
   	else if (__position.orientation > 2*PI)
-  		__position.orientation -= 2*PI;
+  		__position.orientation -= 2*PI; */
   	__position.traveledDistance += deltaD;
   }
 }

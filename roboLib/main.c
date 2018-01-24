@@ -10,14 +10,14 @@ task main()
   MovementResult const* result = NULL;
   getMovementResult(&result);
 
-  straight(2000);
+  rotate(360);
   while (result->state != DONE) {
   	wait1Msec(10);
   	getMovementResult(&result);
   }
   PosData const* pos = NULL;
   getPosition(&pos);
-  displayBigTextLine(1, "%f", pos->traveledDistance);
+  displayBigTextLine(1, "%f", pos->orientation);
   while(true) {wait1Msec(100);}
 
 }
