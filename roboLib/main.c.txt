@@ -6,11 +6,11 @@ task main()
 {
   initConfig(JIMMY);
   initPosition(true);
-
+  
   MovementResult const* result = NULL;
   getMovementResult(&result);
-
-  straight(2000);
+  
+  straight(2400);
   while (result->state != DONE) {
   	wait1Msec(10);
   	getMovementResult(&result);
@@ -19,5 +19,5 @@ task main()
   getPosition(&pos);
   displayBigTextLine(1, "%f", pos->traveledDistance);
   while(true) {wait1Msec(100);}
-
+  
 }

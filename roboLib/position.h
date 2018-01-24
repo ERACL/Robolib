@@ -3,6 +3,12 @@
 
 #include "config.h"
 
+// ---------- CONSTANTES A MODIFIER ----------
+
+const unsigned int positionUpdatePeriod = 20; //En ms.
+
+// ---------- FIN DES CONSTANTES A MODIFIER ----------
+
 //Structure de donnees de position.
 //Distances en mm, angles en degres.
 struct PosData {
@@ -22,8 +28,6 @@ void getRawPosition(struct PosData const** data);
 
 
 //-- DEBUT DES DEFINITIONS --
-
-const unsigned int positionUpdatePeriod = 20; //En ms.
 
 PosData __position; //Contient en tout temps la position du robot (regulierement mise a jour) en tics d'encodage.
 
