@@ -11,7 +11,7 @@ const float maxAngleForArc = 35;
 
 const unsigned int controlPeriod = 20; //Temps entre deux asservissements : ms
 
-const float timeIdleFail = 1000; //Temps d'immobilite apres lequel un mouvement est considere echoue : ms
+const float timeOut = 6000; //Temps d'immobilite apres lequel un mouvement est considere echoue : ms
 const float timeIdleWin = 100; //Temps d'immobilite pres de la cible apres lequel un mouvement est considere termine : ms
 
 // ---------- FIN DES CONSTANTES A MODIFIER ----------
@@ -51,7 +51,7 @@ enum MovementType {
 	STRAIGHT, ARC, ROTATE
 };
 
-struct MovementResult { //Mettre dans cette structure toutes les donnees qu'un mouvement doit renvoyer (pour l'instant, juste state)
+struct MovementResult { //Mettre dans cette structure toutes les donnees qu'un mouvement doit renvoyer.
 	enum MovementState state;
 	enum MovementType type;
 };
@@ -115,32 +115,38 @@ bool moveTo(struct PosData const* target, bool ignoreOrientation) {
 bool moveTo_forceStraight(struct PosData const* target, bool ignoreOrientation) {
 	struct PosData const* pos = NULL;
 	getPosition(&pos);
-	float deltaOToFace = atan((target->y - pos->y) / (target->x - pos->x)) * 180 / PI - pos->orientation;
+	struct MovementResult const* res = NULL;
 	float deltaD = sqrt(pow(target->x - pos->x, 2) + pow(target->y - pos->y, 2));
+	float deltaOToFace;
+	if (target->y == pos->y && target->y > pos->x)
+		deltaOToFace = 180 - pos->orientation;
+	else
+		deltaOToFace = 2 * atan((target->y - pos->y) / (target->x - pos->x + deltaD)) * 360 / 2 / PI - pos->orientation;
+
+	while (deltaOToFace > 180)
+		deltaOToFace -= 360;
+	while (deltaOToFace < -180)
+		deltaOToFace += 360;
+
 	rotate(deltaOToFace);
 	straight(deltaD);
 	if (!ignoreOrientation) {
 		getPosition(&pos);
-		rotate(target->orientation - pos->orientation);
+		float deltaO = target->orientation - pos->orientation;
+		while (deltaO > 180)
+			deltaO -= 360;
+		while (deltaO < -180)
+			deltaO += 360;
+		rotate(deltaO);
 	}
+
+	do {
+		wait1Msec(10);
+		getMovementResult(&res);
+	}	while(res->state == ONGOING);
 
 	return true;
 }
-
-/*
-void straight(float distance) {
-	bool targetReached = false;
-	bool shouldAbort = false;
-	while (!targetReached && !shouldAbort) {
-		motor[motorB]=40;
-		motor[motorA]=-30;
-		wait1Msec(1500);
-		motor[motorB]=0;
-		motor[motorA]=0;
-		targetReached = true;
-	}
-};
-*/
 
 float limit(float number, float limit) {
 	if (number > limit)
@@ -150,7 +156,7 @@ float limit(float number, float limit) {
 	return number;
 }
 
-float straight_targetDist; //Distance a atteindre dans la tache straight_control(), en encode (attention, donne en mm dans straight())
+float __straight_targetDist; //Distance a atteindre dans la tache straight_control(), en encode (attention, donne en mm dans straight())
 
 task straight_control() {
 	struct PosData const* pos = NULL;
@@ -166,22 +172,15 @@ task straight_control() {
 	while (__result.state == ONGOING) {
 		wait1Msec(controlPeriod);
 		getRawPosition(&pos);
-		DDist = straight_targetDist - pos->traveledDistance;
+		DDist = __straight_targetDist - pos->traveledDistance;
 
 		if (fabs(pos->traveledDistance - oldDist) < 0.01)
 			ciclesIdle += 1;
 		else
 			ciclesIdle = 0;
 
-		if (ciclesIdle * controlPeriod > timeIdleFail) {
-			__result.state = FAILED_TIMEOUT;
-			motor[motorA] = 0;
-			motor[motorB] = 0;
-		}
 		if (ciclesIdle * controlPeriod > timeIdleWin && fabs(DDist) < c->errorMarginDistance) {
 			__result.state = DONE;
-			motor[motorA] = 0;
-			motor[motorB] = 0;
 		}
 		else {
 			if (fabs(DDist) < c->integralControlDistance && integralControl == false)
@@ -197,63 +196,49 @@ task straight_control() {
 			motor[motorB] = (int)vc;
 		}
 	}
+
+	motor[motorA] = 0;
+	motor[motorB] = 0;
 }
 
 void straight(float distance) {
-	while (__result.state == ONGOING) { wait1Msec(50); }
+	while (__result.state == ONGOING) { wait1Msec(10); }
 	__result.state = ONGOING;
 	__result.type = STRAIGHT;
 	struct Config const* c = NULL;
 	getConfig(&c);
 	struct PosData const* pos = NULL;
 	getRawPosition(&pos);
-	straight_targetDist = distance / c->mmPerEncode + pos->traveledDistance;
+	__straight_targetDist = distance / c->mmPerEncode + pos->traveledDistance;
 	startTask(straight_control);
 }
 
-void arc(float distance, float angle) {
-	bool targetReached = false;
-	bool shouldAbort = false;
-	while (!targetReached && !shouldAbort) {
+float __arc_targetDist;
+float __arc_ratioRightOnLeft;
 
-	}
-
-};
-
-float rotate_targetOrientation; //Angle a atteindre dans la tache rotate_control(), en radians (attention, donne en degres dans rotate())
-
-task rotate_control() {
+task arc_control() {
 	struct PosData const* pos = NULL;
 	struct Config const* c = NULL;
 	getConfig(&c);
 
 	bool integralControl = false;
-	float DOrientation = 0;
 	float DDist = 0;
 	float DDistIntegral = 0;
 	float vc = 0;
-	float oldOrientation = 0;
+	float oldDist = 0;
 	int ciclesIdle = 0;
 	while (__result.state == ONGOING) {
 		wait1Msec(controlPeriod);
 		getRawPosition(&pos);
-		DOrientation = rotate_targetOrientation - pos->orientation;
-		DDist = DOrientation * c->betweenWheels / c->mmPerEncode;
+		DDist = __arc_targetDist - pos->traveledDistance;
 
-		if (fabs(pos->orientation - oldOrientation) < 0.0001)
+		if (fabs(pos->traveledDistance - oldDist) < 0.01)
 			ciclesIdle += 1;
 		else
 			ciclesIdle = 0;
 
-		if (ciclesIdle * controlPeriod > timeIdleFail) {
-			__result.state = FAILED_TIMEOUT;
-			motor[motorA] = 0;
-			motor[motorB] = 0;
-		}
-		if (ciclesIdle * controlPeriod > timeIdleWin && fabs(DOrientation) < c->errorMarginAngle) {
+		if (ciclesIdle * controlPeriod > timeIdleWin && fabs(DDist) < c->errorMarginDistance) {
 			__result.state = DONE;
-			motor[motorA] = 0;
-			motor[motorB] = 0;
 		}
 		else {
 			if (fabs(DDist) < c->integralControlDistance && integralControl == false)
@@ -262,24 +247,88 @@ task rotate_control() {
 			if (integralControl)
 				DDistIntegral += DDist * controlPeriod;
 
-			vc = limit(vc + limit(c->K_p * DDist / 2 + c->K_i * DDistIntegral / 2 - vc, c->maxAllowedPowerDerivative * controlPeriod), c->maxAllowedPower);
+			vc = limit(vc + limit(c->K_p * DDist + c->K_i * DDistIntegral - vc, c->maxAllowedPowerDerivative * controlPeriod), c->maxAllowedPower);
 
-			oldOrientation = pos->orientation;
+			oldDist = pos->traveledDistance;
 			motor[motorA] = (int)vc;
-			motor[motorB] = -(int)vc;
+			motor[motorB] = (int)vc;
 		}
 	}
+
+	motor[motorA] = 0;
+	motor[motorB] = 0;
+}
+
+void arc(float distance, float angle) {
+	/* Non fonctionnel pour le moment
+	while (__result.state == ONGOING) { wait1Msec(10); }
+	__result.state = ONGOING;
+	__result.type = ARC;
+	struct Config const* c = NULL;
+	getConfig(&c);
+	struct PosData const* pos = NULL;
+	getRawPosition(&pos);
+	float arcRadius = distance / (c->mmPerEncode * 2 * sin(angle * PI / 180 / 2));
+	__arc_targetDist = (arcRadius + c->betweenWheels / c->mmPerEncode / 2) * angle * PI / 180;
+	__arc_ratioRightOnLeft = (arcRadius + c->betweenWheels / c->mmPerEncode / 2) / (arcRadius - c->betweenWheels / c->mmPerEncode / 2);
+
+	startTask(arc_control);
+	*/
+};
+
+float __rotate_targetOrientation; //Angle a atteindre dans la tache rotate_control(), en radians (attention, donne en degres dans rotate())
+
+task rotate_control() {
+	struct PosData const* pos = NULL;
+	struct Config const* c = NULL;
+	getConfig(&c);
+
+	bool integralControl = false;
+	float DDist = 0;
+	float DDistIntegral = 0;
+	float vc = 0;
+	float oldOrientation = 0;
+	int ciclesIdle = 0;
+	while (__result.state == ONGOING) {
+		wait1Msec(controlPeriod);
+		getRawPosition(&pos);
+		DDist = (__rotate_targetOrientation - pos->orientation) * c->betweenWheels / (2 * c->mmPerEncode);
+
+		if (fabs(pos->orientation - oldOrientation) < 0.0001)
+			ciclesIdle += 1;
+		else
+			ciclesIdle = 0;
+
+		if (ciclesIdle * controlPeriod > timeIdleWin && fabs(DDist / c->betweenWheels * 2 * c->mmPerEncode) < c->errorMarginAngle) {
+			__result.state = DONE;
+		}
+		else {
+			if (fabs(DDist) < c->integralControlDistance && integralControl == false)
+				integralControl = true;
+
+			if (integralControl)
+				DDistIntegral += DDist * controlPeriod;
+
+			vc = limit(vc + limit(c->K_p * DDist + c->K_i * DDistIntegral - vc, c->maxAllowedPowerDerivative * controlPeriod), c->maxAllowedPower);
+
+			oldOrientation = pos->orientation;
+			motor[motorA] = -(int)vc;
+			motor[motorB] = (int)vc;
+		}
+	}
+	motor[motorA] = 0;
+	motor[motorB] = 0;
 }
 
 void rotate(float angle) {
-while (__result.state == ONGOING) { wait1Msec(50); }
+while (__result.state == ONGOING) { wait1Msec(10); }
 	__result.state = ONGOING;
 	__result.type = ROTATE;
 	struct Config const* c = NULL;
 	getConfig(&c);
 	struct PosData const* pos = NULL;
 	getRawPosition(&pos);
-	rotate_targetOrientation = pos->orientation + angle * PI / 180;
+	__rotate_targetOrientation = pos->orientation + angle * PI / 180;
 	startTask(rotate_control);
 };
 

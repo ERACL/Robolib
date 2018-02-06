@@ -43,6 +43,10 @@ void getPosition(struct PosData const** data) {
   __pos_standardized.x = __position.x * c->mmPerEncode;
   __pos_standardized.y = __position.y * c->mmPerEncode;
   __pos_standardized.orientation = __position.orientation * 180 / PI;
+  while (__pos_standardized.orientation > 360)
+  	__pos_standardized.orientation -= 360;
+ 	while (__pos_standardized.orientation < 0)
+ 		__pos_standardized.orientation += 360;
   __pos_standardized.traveledDistance = __position.traveledDistance * c->mmPerEncode;
   *data = &__pos_standardized;
 }
@@ -54,10 +58,10 @@ void getRawPosition(struct PosData const** data) {
 task updatePosition() {
   while (true) {
     wait1Msec(positionUpdatePeriod);
-    float deltaR = nMotorEncoder[motorA] - __oldEncoderR;
-    __oldEncoderR = nMotorEncoder[motorA];
-    float deltaL = nMotorEncoder[motorB] - __oldEncoderL;
-    __oldEncoderL = nMotorEncoder[motorB];
+    float deltaL = nMotorEncoder[motorA] - __oldEncoderL;
+    __oldEncoderL = nMotorEncoder[motorA];
+    float deltaR = nMotorEncoder[motorB] - __oldEncoderR;
+    __oldEncoderR = nMotorEncoder[motorB];
     float deltaD = (deltaR + deltaL) / 2;
     float deltaO = (deltaR - deltaL) / __betweenWheelsInEncode;
     float midO = __position.orientation + deltaO / 2;
