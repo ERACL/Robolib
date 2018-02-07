@@ -112,6 +112,22 @@ void initConfig(enum Robot robot) {
   		break;
     }
     case TULLIUS: {
+    	__config.betweenWheels = 209.3;
+  		__config.mmPerEncode = 0.634;
+  		__config.initialOrientation_GreenSide = 0;
+  		__config.initialX_GreenSide = 0;
+  		__config.initialY_GreenSide = 0;
+  		__config.sensorFront = true;
+  		__config.sensorBack = false;
+  		__config.K_m = 0.01;
+  		__config.K_p = 0.2;
+  		__config.K_i = 0.0005;
+  		__config.tau_m = 140;
+  		__config.maxAllowedPower = 45;
+  		__config.maxAllowedPowerDerivative = 0.1;
+  		__config.errorMarginDistance = 3 / __config.mmPerEncode;
+  		__config.errorMarginAngle = PI / 180;
+  		__config.integralControlDistance = 10 / __config.mmPerEncode;
       break;
     }
     case ROCCO: {
