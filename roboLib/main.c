@@ -4,8 +4,8 @@
 
 task main()
 {
-  initConfig(JIMMY);
-  initPosition(true);
+  initConfig(TULLIUS);
+  initPosition(false);
 
   MovementResult const* result = NULL;
   getMovementResult(&result);

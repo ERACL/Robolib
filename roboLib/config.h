@@ -117,6 +117,9 @@ void initConfig(enum Robot robot) {
   		__config.initialOrientation_GreenSide = 0;
   		__config.initialX_GreenSide = 0;
   		__config.initialY_GreenSide = 0;
+  		__config.initialOrientation_OrangeSide = 180;
+  		__config.initialX_OrangeSide = 0;
+  		__config.initialY_OrangeSide = 0;
   		__config.sensorFront = true;
   		__config.sensorBack = false;
   		__config.K_m = 0.01;

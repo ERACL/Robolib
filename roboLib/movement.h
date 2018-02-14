@@ -27,9 +27,13 @@ const float timeIdleWin = 100; //Temps d'immobilite pres de la cible apres leque
  * les obstacles sont geres (et le mouvement retente) tant que le mouvement n'a pas excede la valeur de timeout, auquel cas false sera renvoye.
  * si ignoreOrientation est vrai, le robot ne cherchera pas a se mettre dans l'axe specifie dans target.
  */
+bool moveTo(float x, float y);
+bool moveTo(float x, float y, float orientation);
 bool moveTo(struct PosData const* target, bool ignoreOrientation = false);
 
 //moveTo prefere utiliser arc() pour economiser des mouvements ; ici, des straight() seront utilises.
+bool moveTo_forceStraight(float x, float y);
+bool moveTo_forceStraight(float x, float y, float orientation);
 bool moveTo_forceStraight(struct PosData const* target, bool ignoreOrientation = false);
 
 //Partie bas-niveau
@@ -146,6 +150,21 @@ bool moveTo_forceStraight(struct PosData const* target, bool ignoreOrientation) 
 	}	while(res->state == ONGOING);
 
 	return true;
+}
+
+bool moveTo_forceStraight(float x, float y) {
+	PosData target;
+	target.x = x;
+	target.y = y;
+	return moveTo_forceStraight(&target, true);
+}
+
+bool moveTo_forceStraight(float x, float y, float orientation) {
+	PosData target;
+	target.x = x;
+	target.y = y;
+	target.orientation = orientation;
+	return moveTo_forceStraight(&target);
 }
 
 float limit(float number, float limit) {
