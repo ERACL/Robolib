@@ -1,8 +1,8 @@
 #ifndef MOVEMENT_H
 #define MOVEMENT_H
 
-#include "config.h"
-#include "position.h"
+#include "config.c"
+#include "position.c"
 
 // ---------- CONSTANTES A MODIFIER ----------
 

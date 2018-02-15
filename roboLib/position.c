@@ -1,7 +1,7 @@
 #ifndef POSITION_H
 #define POSITION_H
 
-#include "config.h"
+#include "config.c"
 
 // ---------- CONSTANTES A MODIFIER ----------
 
