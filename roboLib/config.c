@@ -124,7 +124,7 @@ void initConfig(enum Robot robot) {
   		__config.sensorBack = false;
   		__config.K_m = 0.01;
   		__config.K_p = 0.2;
-  		__config.K_i = 0.0005;
+  		__config.K_i = 0.0009;
   		__config.tau_m = 140;
   		__config.maxAllowedPower = 45;
   		__config.maxAllowedPowerDerivative = 0.1;

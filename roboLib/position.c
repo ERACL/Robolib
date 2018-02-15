@@ -84,12 +84,12 @@ void initPosition(bool isGreenSide) {
   if (isGreenSide) {
     __position.x = c->initialX_GreenSide;
     __position.y = c->initialY_GreenSide;
-    __position.orientation = c->initialOrientation_GreenSide;
+    __position.orientation = c->initialOrientation_GreenSide * PI / 180;
   }
   else {
     __position.x = c->initialX_OrangeSide;
     __position.y = c->initialY_OrangeSide;
-    __position.orientation = c->initialOrientation_OrangeSide;
+    __position.orientation = c->initialOrientation_OrangeSide * PI / 180;
   }
   __position.traveledDistance = 0;
   nMotorEncoder[motorB] = 0;
