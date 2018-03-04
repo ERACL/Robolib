@@ -5,36 +5,43 @@
  * Dans la struct Config sont recensees toutes les constantes dependant du robot (notamment les constantes geometriques).
  * Elles sont a remplir dans la partie definition pour chaque robot. La configuration est chargee en debut de programme avec initConfig.
  * Les constantes sont ensuite obtenues dans tout le programme via getConfig().
- * Notons que certaines constantes (temps d'asservissement...) sont indépendantes des robots et se trouvent donc dans leurs fichiers respectifs.
  */
 
 struct Config {
-  float betweenWheels;
+  float betweenWheels; //mm
   float mmPerEncode;
-  float initialX_GreenSide;
+
+  float initialX_GreenSide; //mm
   float initialX_OrangeSide;
   float initialY_GreenSide;
   float initialY_OrangeSide;
-  float initialOrientation_GreenSide;
+  float initialOrientation_GreenSide; //degres
   float initialOrientation_OrangeSide;
+
   bool sensorFront;
   bool sensorBack;
-  float securityDistance;
 
-  //Constantes utilisees dans l'asservissement (distances en encodes, angles en radians pour raisons de performances)
-  float K_m; //Gain du moteur : (encode / sec) / puissance
-  float tau_m; //Temps caracteristique du moteur (1er ordre) : ms
-  float K_p; //Gain de la partie proportionnelle du correcteur : puissance / encode
-  float K_i; //Gain de la partie integrateur du correcteur : puissance / encode / ms
-  float integralControlDistance; //Distance a la cible a laquelle le correcteur integral s'engage : encode
-  float maxAllowedPower;
-  float maxAllowedPowerDerivative; //Acceleration de consigne maximale authorisee : puissance / ms
-	float errorMarginDistance; //Erreur de distance a la cible toleree : encode
-	float errorMarginAngle; //Erreur d'angle a la cible toleree : radians
+  float securityDistance; //mm
+
+  //Constantes d'asservissement
+  float controlPeriod; //ms
+
+	float KPStr; //pow / mm : Coefficient proportionnel du correcteur de vitesse droite
+	float KIStr; //pow / (mm * ms) : Coefficient integrateur du correcteur de vitesse droite
+	float KPRot; //pow / rad : Coefficient proportionnel du correcteur de vitesse de rotation
+	float KIRot; //pow / (rad * ms) : Coefficient integrateur du correcteur de vitesse de rotation
+
+	float maxAccel; //mm/ms/ms
+	float maxSpeed; //mm/ms
+
+	float powerPerEPms; //pow / (enc / ms) : Puissance de consigne necessaire pour une vitesse de 1 encode/ms (constante moteur)
+
+	float dist_close; //mm : Distance a partir de laquelle s'enclenche les integrations
+	float dist_closeEnough; //mm : Distance consideree comme OK
 };
 
 enum Robot {
-  TESTROBOT, JIMMY, OBELIX, TULLIUS, ROCCO
+  JIMMY, OBELIX, TULLIUS, ROCCO
 };
 
 void initConfig(enum Robot robot); //A effectuer en TOUT DEBUT DE PROGRAMME, avant les autres initialisations (initPosition()...), qui en dependent.
@@ -72,16 +79,6 @@ struct Config __config;
 //TODO : A remplir !
 void initConfig(enum Robot robot) {
   switch (robot) {
-  	case TESTROBOT: {
-  		__config.betweenWheels = 230;
-  		__config.mmPerEncode = 0.39834;
-  		__config.initialOrientation_GreenSide = 0;
-  		__config.initialX_GreenSide = 0;
-  		__config.initialY_GreenSide = 0;
-  		__config.sensorFront = false;
-  		__config.sensorBack = false;
-  		break;
-  	}
     case JIMMY: {
 	    __config.betweenWheels = 154.7;
   		__config.mmPerEncode = 0.53;
@@ -90,15 +87,6 @@ void initConfig(enum Robot robot) {
   		__config.initialY_GreenSide = 0;
   		__config.sensorFront = true;
   		__config.sensorBack = false;
-  		__config.K_m = 0.01;
-  		__config.K_p = 0.2;
-  		__config.K_i = 0.0005;
-  		__config.tau_m = 140;
-  		__config.maxAllowedPower = 45;
-  		__config.maxAllowedPowerDerivative = 0.1;
-  		__config.errorMarginDistance = 3 / __config.mmPerEncode;
-  		__config.errorMarginAngle = PI / 180;
-  		__config.integralControlDistance = 10 / __config.mmPerEncode;
   		break;
     }
     case OBELIX: {
@@ -122,15 +110,17 @@ void initConfig(enum Robot robot) {
   		__config.initialY_OrangeSide = 0;
   		__config.sensorFront = true;
   		__config.sensorBack = false;
-  		__config.K_m = 0.01;
-  		__config.K_p = 0.2;
-  		__config.K_i = 0.0009;
-  		__config.tau_m = 140;
-  		__config.maxAllowedPower = 45;
-  		__config.maxAllowedPowerDerivative = 0.1;
-  		__config.errorMarginDistance = 3 / __config.mmPerEncode;
-  		__config.errorMarginAngle = PI / 180;
-  		__config.integralControlDistance = 10 / __config.mmPerEncode;
+
+		  __config.controlPeriod = 20;
+			__config.KPStr = 0.13;
+			__config.KIStr = 0.0002;
+			__config.KPRot = 25;
+			__config.KIRot = 0.1;
+			__config.maxAccel = 0.0013;
+			__config.maxSpeed = 0.3;
+			__config.powerPerEPms = 100;
+			__config.dist_close = 50;
+			__config.dist_closeEnough = 3;
       break;
     }
     case ROCCO: {
