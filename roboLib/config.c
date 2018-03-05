@@ -87,6 +87,17 @@ void initConfig(enum Robot robot) {
   		__config.initialY_GreenSide = 0;
   		__config.sensorFront = true;
   		__config.sensorBack = false;
+
+  		__config.controlPeriod = 20;
+			__config.KPStr = 0.13;
+			__config.KIStr = 0.0002;
+			__config.KPRot = 25;
+			__config.KIRot = 0.12;
+			__config.maxAccel = 0.0013;
+			__config.maxSpeed = 0.3;
+			__config.powerPerEPms = 100;
+			__config.dist_close = 50;
+			__config.dist_closeEnough = 3;
   		break;
     }
     case OBELIX: {

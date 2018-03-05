@@ -286,8 +286,8 @@ task task_rotateTo() {
     VRot = limit(VRot + dVRot, c->maxSpeed * 0.6 * c->powerPerEPms / c->mmPerEncode);
     VStr = limit(VStr + dVStr, c->maxSpeed * c->powerPerEPms / c->mmPerEncode - abs(VRot));
 
-    motor[motorA] = VStr + VRot;
-    motor[motorB] = VStr - VRot;
+    motor[motorRight] = VStr + VRot;
+    motor[motorLeft] = VStr - VRot;
 
 	} while (__mvtState != NOMVT);
 }
