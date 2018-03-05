@@ -17,7 +17,6 @@ void resumeMovement();
 void abortMovement();
 
 enum movementState {NOMVT, STARTING, MOVETO, MOVETO_BACKWARDS, ROTATETO, PAUSED, FAILED_TIMEOUT, ABORTED};
-
 enum movementState getMovementState();
 
 
@@ -73,17 +72,17 @@ bool __backwards = false;
 task task_moveTo() {
 	struct Config const* c = NULL;
 	getConfig(&c);
-	struct PosData const* pos = NULL;
+	struct PosData pos;
 	getRawPosition(&pos);
+	pos.x *= c->mmPerEncode;
+	pos.y *= c->mmPerEncode;
 
 	//Pre-initialisation des variables
-	float x = pos->x * c->mmPerEncode;
-	float y = pos->y * c->mmPerEncode;
 
-	float D = sqrt(pow(__targetX - x, 2) + pow(__targetY - y, 2)); //Distance a la cible
-	float A = PI - pos->orientation; //Difference d'orientation avec la cible
-	if (__targetX - x + D != 0)
-		A = mod2Pi(2 * atan((__targetY - y) / (__targetX - x + D)) - pos->orientation);
+	float D = sqrt(pow(__targetX - pos.x, 2) + pow(__targetY - pos.y, 2)); //Distance a la cible
+	float A = PI - pos.orientation; //Difference d'orientation avec la cible
+	if (__targetX - pos.x + D != 0)
+		A = mod2Pi(2 * atan((__targetY - pos.y) / (__targetX - pos.x + D)) - pos.orientation);
 
 	float D_proj = cos(A) * D; //Distance signee
 	float A_modPi = modPi(A); //Angle tolerant la cible vers l'arriere
@@ -105,16 +104,16 @@ task task_moveTo() {
 			__mvtState = FAILED_TIMEOUT;
 
 		getRawPosition(&pos);
-		x = pos->x * c->mmPerEncode;
-		y = pos->y * c->mmPerEncode;
+		pos.x *= c->mmPerEncode;
+		pos.y *= c->mmPerEncode;
 
 		//Integration en deux parties (transformee en z) : ancien + nouveau / 2
 		i_D_proj += D_proj / 2 * c->controlPeriod;
 
-		D = sqrt(pow(__targetX - x, 2) + pow(__targetY - y, 2));
-		A = PI - pos->orientation;
-		if (__targetX - x + D != 0)
-			A = mod2Pi(2 * atan((__targetY - y) / (__targetX - x + D)) - pos->orientation);
+		D = sqrt(pow(__targetX - pos.x, 2) + pow(__targetY - pos.y, 2));
+		A = PI - pos.orientation;
+		if (__targetX - pos.x + D != 0)
+			A = mod2Pi(2 * atan((__targetY - pos.y) / (__targetX - pos.x + D)) - pos.orientation);
 
 		D_proj = cos(A) * D;
 		A_modPi = modPi(A);
@@ -134,15 +133,30 @@ task task_moveTo() {
 			counter_timeout = 0;
 		}
 		else if (D > c->dist_close) {
-			if (fabs(A) > PI / 24) { //Phase 1 : Rotation simple
-				dVRot = c->KPRot * A - VRot;
-        dVStr = -VStr;
-        i_D_proj = 0;
+			if (!__backwards) {
+				if (fabs(A) > PI / 24) { //Phase 1 : Rotation simple
+					dVRot = c->KPRot * A - VRot;
+	        dVStr = -VStr;
+	        i_D_proj = 0;
+				}
+				else { //Phase 2 : rotation simple, avance simple
+					dVRot = c->KPRot * A_modPi - VRot;
+	        dVStr = c->KPStr * D_proj - VStr;
+	        i_D_proj = 0;
+				}
 			}
-			else { //Phase 2 : rotation simple, avance simple
-				dVRot = c->KPRot * A_modPi - VRot;
-        dVStr = c->KPStr * D_proj - VStr;
-        i_D_proj = 0;
+			else {
+				float A_back = mod2Pi(A + PI);
+				if (fabs(A_back) > PI / 24) {
+					dVRot = c->KPRot * A_back - VRot;
+	        dVStr = -VStr;
+	        i_D_proj = 0;
+				}
+				else {
+					dVRot = c->KPRot * A_modPi - VRot;
+	        dVStr = c->KPStr * D_proj - VStr;
+	        i_D_proj = 0;
+				}
 			}
 			counter_stop = 0;
 		}
@@ -198,21 +212,21 @@ float __targetOrientation; //rad
 task task_rotateTo() {
 	struct Config const* c = NULL;
 	getConfig(&c);
-	struct PosData const* pos = NULL;
+	struct PosData pos;
 	getRawPosition(&pos);
-	float x = pos->x * c->mmPerEncode;
-	float y = pos->y * c->mmPerEncode;
+	pos.x *= c->mmPerEncode;
+	pos.y *= c->mmPerEncode;
 
 	float VRot = 0, VStr = 0;
 
-	float oriDiff = mod2Pi(__targetOrientation - pos->orientation);
+	float oriDiff = mod2Pi(__targetOrientation - pos.orientation);
 	float i_oriDiff = 0;
 
-	float D = c->mmPerEncode * sqrt(pow(__targetX - x, 2) + pow(__targetY - y, 2));
+	float D = c->mmPerEncode * sqrt(pow(__targetX - pos.x, 2) + pow(__targetY - pos.y, 2));
 
-	float A = PI - pos->orientation; //Argument cible - robot
-	if (__targetX - x + D != 0)
-		A = mod2Pi(2 * atan((__targetY - y) / (__targetX - x + D)) - pos->orientation);
+	float A = PI - pos.orientation; //Argument cible - robot
+	if (__targetX - pos.x + D != 0)
+		A = mod2Pi(2 * atan((__targetY - pos.y) / (__targetX - pos.x + D)) - pos.orientation);
 
 	unsigned int counter_stop = 0;
 	unsigned int counter_timeout = 0;
@@ -227,17 +241,17 @@ task task_rotateTo() {
 			__mvtState = FAILED_TIMEOUT;
 
 		getRawPosition(&pos);
-		x = pos->x * c->mmPerEncode;
-		y = pos->y * c->mmPerEncode;
+		pos.x *= c->mmPerEncode;
+		pos.y *= c->mmPerEncode;
 
 		i_oriDiff += oriDiff / 2 * c->controlPeriod;
-		oriDiff = mod2Pi(__targetOrientation - pos->orientation);
+		oriDiff = mod2Pi(__targetOrientation - pos.orientation);
 		i_oriDiff += oriDiff / 2 * c->controlPeriod;
 
-		A = PI - pos->orientation; //Argument cible - robot
-		if (__targetX - x + D != 0)
-			A = mod2Pi(2 * atan((__targetY - y) / (__targetX - x + D)) - pos->orientation);
-		D = c->mmPerEncode * sqrt(pow(__targetX - x, 2) + pow(__targetY - y, 2));
+		A = PI - pos.orientation; //Argument cible - robot
+		if (__targetX - pos.x + D != 0)
+			A = mod2Pi(2 * atan((__targetY - pos.y) / (__targetX - pos.x + D)) - pos.orientation);
+		D = c->mmPerEncode * sqrt(pow(__targetX - pos.x, 2) + pow(__targetY - pos.y, 2));
 
 		float dVRot, dVStr;
 
@@ -258,6 +272,7 @@ task task_rotateTo() {
 			counter_stop = 0;
 		}
 		else if (fabs(oriDiff) > c->dist_closeEnough / c->betweenWheels) {
+			displayBigTextLine(7, "%5.1f", i_oriDiff);
 			dVRot = c->KPRot * oriDiff + c->KIRot * i_oriDiff - VRot;
 			dVStr = c->KPStr * D * cos(A) - VStr;
 			counter_stop = 0;
@@ -282,11 +297,11 @@ void rotateTo(float orientation) {
 	wait1Msec(20);
 
 	struct Config const* c = NULL;
-	struct PosData const* pos = NULL;
+	struct PosData pos;
 	getConfig(&c);
 	getRawPosition(&pos);
-	__targetX = pos->x * c->mmPerEncode;
-	__targetY = pos->y * c->mmPerEncode;
+	__targetX = pos.x * c->mmPerEncode;
+	__targetY = pos.y * c->mmPerEncode;
 	__targetOrientation = orientation * PI / 180;
 	__mvtState = STARTING;
 	startTask(task_rotateTo);

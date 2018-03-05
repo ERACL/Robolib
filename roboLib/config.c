@@ -115,7 +115,7 @@ void initConfig(enum Robot robot) {
 			__config.KPStr = 0.13;
 			__config.KIStr = 0.0002;
 			__config.KPRot = 25;
-			__config.KIRot = 0.1;
+			__config.KIRot = 0.12;
 			__config.maxAccel = 0.0013;
 			__config.maxSpeed = 0.3;
 			__config.powerPerEPms = 100;
