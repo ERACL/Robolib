@@ -120,7 +120,8 @@ void initConfig(enum Robot robot) {
   		__config.initialX_OrangeSide = 0;
   		__config.initialY_OrangeSide = 0;
   		__config.sensorFront = true;
-  		__config.sensorBack = false;
+  		__config.sensorBack = true;
+  		__config.securityDistance = 250;
 
 		  __config.controlPeriod = 20;
 			__config.KPStr = 0.13;

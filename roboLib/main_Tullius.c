@@ -1,3 +1,5 @@
+#pragma config(Sensor, S1,     sensorBack,     sensorEV3_Ultrasonic)
+#pragma config(Sensor, S2,     sensorFront,    sensorEV3_Ultrasonic)
 #pragma config(Sensor, S4,     redButton,      sensorEV3_Touch)
 #pragma config(Motor,  motorA,          motorRight,    tmotorEV3_Medium, PIDControl, encoder)
 #pragma config(Motor,  motorB,          motorLeft,     tmotorEV3_Medium, PIDControl, encoder)
@@ -6,6 +8,7 @@
 #include "config.c"
 #include "position.c"
 #include "movement.c"
+#include "sonar.c"
 
 float notes[8] = {1046.50, 1174.66, 1318.51, 1396.91, 1567.98, 1760.00, 1975.53, 2093.00};
 unsigned int currentNote = 0;
@@ -13,7 +16,7 @@ unsigned int currentNote = 0;
 void beep() {
 	playTone(notes[currentNote], 10);
 	currentNote += 1;
-	if (currentNote == 9)
+	if (currentNote == 8)
 		currentNote = 0;
 }
 
@@ -46,27 +49,37 @@ task displayPos() {
 
 task main() {
   initConfig(TULLIUS);
-  initPosition(true);
+  initPosition(false);
+  setSoundVolume(30);
 
-  while (SensorValue[redButton] == 0) { wait1Msec(20); }
   while (SensorValue[redButton] == 1) { wait1Msec(20); }
   wait1Msec(100);
   startTask(emergencyStop);
   startTask(displayPos);
+  startTask(avoidObstacles);
 
   PosData pos;
-
-  /*
+/*
 	moveTo(-400, -400);
 	moveTo(-800, -400);
-	moveTo(-500, 470, 90);
-	*/
+	moveTo(-500, 470);
+	rotateTo(90);
+	moveTo_backwards(-400, 100);
+	moveTo(-2000, -400)*/
 
-	setSoundVolume(15);
-	moveTo(200, 0);
-	moveTo_backwards(0, 0);
+	moveTo(-400, -400);
+	moveTo(-850, -400);
+	moveTo(-600, 0);
+	rotateTo(90);
+	moveTo(-500, 450);
+	moveTo_backwards(-500, -500);
 	rotateTo(180);
+	moveTo(-2200, -500);
+	moveTo(-2200, 100);
 	rotateTo(0);
+	moveTo(-300, 100);
+
 	while (getMovementState() != NOMVT) { wait1Msec(20); }
+
 	fanfare();
 }
