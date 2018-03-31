@@ -26,7 +26,7 @@ void abortMovement();
 enum movementState {NOMVT, ONGOING, PAUSED, ABORTED};
 enum movementState getMovementState();
 
-enum movementType {MOVETO, MOVETO_BACKWARD, ROTATETO};
+enum movementType {MOVETO, MOVETO_FORWARD, MOVETO_BACKWARD, ROTATETO};
 enum movementType getMovementType();
 
 //-- DEBUT DES DEFINITIONS --
@@ -99,8 +99,9 @@ task controlMovement() {
 	float old_dist = dist;
 
 	//Angle a parcourir pour atteindre l'angle cible (rad) ; nul si le mouvement ne demande pas de rotation
-	float angle = (__mvtType == ROTATETO) ? mod2Pi(__targetOrientation - pos.orientation) : 0;
-	float old_angle = angle;
+	float oriDiff = (__mvtType == ROTATETO) ? mod2Pi(__targetOrientation - pos.orientation) : 0;
+	float i_oriDiff = 0;
+	float old_oriDiff = oriDiff;
 
 	//Angle a parcourir pour s'aligner avec la cible (rad)
 	float angleTarget = PI - pos.orientation;
@@ -119,6 +120,10 @@ task controlMovement() {
 	float i_angleTarget_modPi = 0;
 	float old_angleTarget_modPi = angleTarget_modPi;
 
+	//Angle a la cible pour s'aligner vers l'arriere (rad)
+	float angleTarget_backward = mod2Pi(angleTarget + PI);
+	float i_angleTarget_backward = 0;
+	float old_angleTarget_backward = angleTarget_backward;
 
 	//Vitesse de consigne, decomposee en vitesse de rotation et d'avance droite (mm / ms)
 	float vc_rot = 0;
@@ -141,24 +146,29 @@ task controlMovement() {
 
 		//Mise a jour des variables instantanees
 		dist = sqrt(pow(__targetX - pos.x, 2) + pow(__targetY - pos.y, 2));
-		angle = (__mvtType == ROTATETO) ? mod2Pi(__targetOrientation - pos.orientation) : 0;
+		oriDiff = (__mvtType == ROTATETO) ? mod2Pi(__targetOrientation - pos.orientation) : 0;
 		angleTarget = PI - pos.orientation;
 		if (__targetX - pos.x + dist != 0)
 			angleTarget = mod2Pi(2 * atan((__targetY - pos.y) / (__targetX - pos.x + dist)) - pos.orientation);
 		dist_weighted = cos(angleTarget) * dist;
 		angleTarget_modPi = modPi(angleTarget);
+		angleTarget_backward = mod2Pi(angleTarget + PI);
 
 		//Mise a jour des variables integrees
-		i_dist_weighted = limit(i_dist_weighted + dist_weighted * c->controlPeriod, c->integLimit / c->KIPos);
-		i_angleTarget = limit(i_angleTarget + angleTarget * c->controlPeriod, c->integLimit / (c->KIPos * c->betweenWheels / 2));
-		i_angleTarget_modPi = limit(i_angleTarget_modPi + angleTarget_modPi * c->controlPeriod, c->integLimit / (c->KIPos * c->betweenWheels / 2));
+		if (c->KIPos > 0) {
+			i_dist_weighted = limit(i_dist_weighted + dist_weighted * c->controlPeriod, c->integLimit / c->KIPos);
+			i_oriDiff = limit(i_oriDiff + oriDiff * c->controlPeriod, c->integLimit / (c->KIPos * c->betweenWheels / 2));
+			i_angleTarget = limit(i_angleTarget + angleTarget * c->controlPeriod, c->integLimit / (c->KIPos * c->betweenWheels / 2));
+			i_angleTarget_modPi = limit(i_angleTarget_modPi + angleTarget_modPi * c->controlPeriod, c->integLimit / (c->KIPos * c->betweenWheels / 2));
+			i_angleTarget_backward = limit(i_angleTarget_backward + angleTarget_backward * c->controlPeriod, c->integLimit / (c->KIPos * c->betweenWheels / 2));
+		}
 
 		//Mise a jour du compteur (hors pause)
 		if (__mvtState != PAUSED)
 			counter += 1;
 
 		//On arrete le robot en cas de cible atteinte, de pause, d'arret d'urgence ou de timeout
-		bool shouldStop = (dist < c->dist_closeEnough) && (fabs(angle) < c->angle_closeEnough);
+		bool shouldStop = (dist < c->dist_closeEnough) && (fabs(oriDiff) < c->angle_closeEnough);
 		shouldStop |= __mvtState == PAUSED;
 		shouldStop |= __mvtState == ABORTED;
 		shouldStop |= counter > (unsigned int)(10000 / c->controlPeriod);
@@ -167,7 +177,7 @@ task controlMovement() {
 			p_str -= limit(p_str, c->maxAccel * c->controlPeriod);
 			p_rot -= limit(p_rot, c->maxAccel * c->controlPeriod);
 
-			if (dist == old_dist && angle == old_angle && __mvtState != PAUSED) {
+			if (dist == old_dist && oriDiff == old_oriDiff && __mvtState != PAUSED) {
 				p_str = 0;
 				p_rot = 0;
 				__mvtState = NOMVT;
@@ -184,15 +194,21 @@ task controlMovement() {
 			//cela permet d'eviter de perdre de l'information sur le mouvement, mais fait que la limite est parfois plus basse que demandee.
 			float d_vc_str = 0, d_vc_rot = 0;
 
-			if (__mvtType == ROTATETO) {
+			d_vc_str = limit(c->KPPos * dist_weighted
+										 + c->KIPos * i_dist_weighted
+										 + limit(c->KDPos * (dist_weighted - old_dist_weighted) / c->controlPeriod, c->derivLimit)
+										 - vc_str, c->maxAccel * c->controlPeriod * 0.6);
 
+			if (__mvtType == ROTATETO) {
+				d_vc_rot = limit(c->KPPos * c->betweenWheels / 2 * oriDiff
+											 + c->KIPos * c->betweenWheels / 2 * i_oriDiff
+											 + limit(c->KDPos * c->betweenWheels / 2 * (oriDiff - old_oriDiff) / c->controlPeriod, c->derivLimit)
+											 - vc_rot, c->maxAccel * c->controlPeriod - fabs(d_vc_str));
+
+				vc_str = limit(vc_str + d_vc_str, c->maxSpeed * 0.6);
+				vc_rot = limit(vc_rot + d_vc_rot, c->maxSpeed - fabs(vc_str));
 			}
 			else {
-				d_vc_str = limit(c->KPPos * dist_weighted
-											 + c->KIPos * i_dist_weighted
-											 + limit(c->KDPos * (dist_weighted - old_dist_weighted) / c->controlPeriod, c->derivLimit)
-											 - vc_str, c->maxAccel * c->controlPeriod * 0.6);
-
 				//Cas ou le robot a le choix d'aller en avant ou en arriere
 				if (__mvtType == MOVETO || c->dist_allowBackward < 0 || dist < c->dist_allowBackward) {
 					d_vc_rot = limit(c->KPPos * c->betweenWheels / 2 * angleTarget_modPi
@@ -217,17 +233,19 @@ task controlMovement() {
 					else if (__mvtType == MOVETO_BACKWARD) {
 						d_vc_rot = limit(c->KPPos * c->betweenWheels / 2 * angleTarget_backward
 													 + c->KIPos * c->betweenWheels / 2 * i_angleTarget_backward
-													 + limit(c->KDPos * c->betweenWheels / 2 * (angleTarget - old_angleTarget) / c->controlPeriod, c->derivLimit)
+													 + limit(c->KDPos * c->betweenWheels / 2 * (angleTarget_backward - old_angleTarget_backward) / c->controlPeriod, c->derivLimit)
 													 - vc_rot, c->maxAccel * c->controlPeriod - fabs(d_vc_str));
 
-						vc_str = limit(vc_str + d_vc_str, 0, c->maxSpeed * 0.6);
+						vc_str = limit(vc_str + d_vc_str, -c->maxSpeed * 0.6, 0);
 						vc_rot = limit(vc_rot + d_vc_rot, c->maxSpeed - fabs(vc_str));
 
 					}
 				}
 			}
 
-			//Asservissement en vitesse : obtention de la consigne reelle
+			//Asservissement en vitesse : obtention de la consigne reelle (TODO)
+			p_str = vc_str / c->speedPerPowerUnit;
+			p_rot = vc_rot / c->speedPerPowerUnit;
 
 		}
 
@@ -237,10 +255,11 @@ task controlMovement() {
 
 		//Mise a jour des anciennes variables
 		old_dist = dist;
-		old_angle = angle;
+		old_oriDiff = oriDiff;
 		old_dist_weighted = dist_weighted;
 		old_angleTarget = angleTarget;
 		old_angleTarget_modPi = angleTarget_modPi;
+		old_angleTarget_backward = angleTarget_backward;
 
 	} while (__mvtState != NOMVT);
 
@@ -248,13 +267,53 @@ task controlMovement() {
 	motor[motorRight] = 0;
 }
 
-void moveTo(float x, float y){} //x et y en mm, positions absolues (cible)
+void moveTo(float x, float y){
+	while (__mvtState != NOMVT) { wait1Msec(10); }
+	wait1Msec(10);
 
-void moveTo_forward(float x, float y){}
+	__mvtType = MOVETO;
+	__mvtState = ONGOING;
+	__targetX = x;
+	__targetY = y;
+	startTask(controlMovement);
+}
 
-void moveTo_backward(float x, float y){}
+void moveTo_forward(float x, float y){
+	while (__mvtState != NOMVT) { wait1Msec(10); }
+	wait1Msec(10);
 
-void rotateTo(float orientation){} //orientation en degres
+	__mvtType = MOVETO_FORWARD;
+	__mvtState = ONGOING;
+	__targetX = x;
+	__targetY = y;
+	startTask(controlMovement);
+}
+
+void moveTo_backward(float x, float y){
+	while (__mvtState != NOMVT) { wait1Msec(10); }
+	wait1Msec(10);
+
+	__mvtType = MOVETO_BACKWARD;
+	__mvtState = ONGOING;
+	__targetX = x;
+	__targetY = y;
+	startTask(controlMovement);
+}
+
+void rotateTo(float orientation){
+	while (__mvtState != NOMVT) { wait1Msec(10); }
+	wait1Msec(10);
+
+	struct PosData pos;
+	getPosition(&pos);
+
+	__mvtType = ROTATETO;
+	__mvtState = ONGOING;
+	__targetX = pos.x;
+	__targetY = pos.y;
+	__targetOrientation = orientation * PI / 180;
+	startTask(controlMovement);
+} //orientation en degres
 
 
 
