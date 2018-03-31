@@ -13,6 +13,8 @@ void moveTo(float x, float y); //x et y en mm, positions absolues (cible)
 
 void moveTo_backwards(float x, float y);
 
+void straight(float distance); //Utilise moveTo et la position pour aller vers l'avant ou l'arriere
+
 void rotateTo(float orientation); //orientation en degres
 
 void pauseMovement();
@@ -312,5 +314,15 @@ void rotateTo(float orientation) {
 	startTask(task_rotateTo);
 }
 
+void straight(float distance) {
+	struct PosData pos;
+	getPosition(&pos);
+	if (distance > 0) {
+		moveTo(pos.x + cosDegrees(pos.orientation) * distance, pos.y + sinDegrees(pos.orientation));
+	}
+	else if (distance < 0) {
+		moveTo_backwards(pos.x + cosDegrees(pos.orientation) * distance, pos.y + sinDegrees(pos.orientation));
+	}
+}
 
 #endif

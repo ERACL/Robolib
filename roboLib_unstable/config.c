@@ -29,18 +29,28 @@ struct Config {
   //Constantes d'asservissement
   float controlPeriod; //ms
 
-	float KPStr; //pow / mm : Coefficient proportionnel du correcteur de vitesse droite
-	float KIStr; //pow / (mm * ms) : Coefficient integrateur du correcteur de vitesse droite
-	float KPRot; //pow / rad : Coefficient proportionnel du correcteur de vitesse de rotation
-	float KIRot; //pow / (rad * ms) : Coefficient integrateur du correcteur de vitesse de rotation
+  //Asservissement en position : position -> vitesse voulue
+	float KPPos; //Coefficient proportionnel : (mm / ms) / mm = ms^-1
+	float KIPos; //Coefficient integrateur : (mm / ms) / (mm * ms) = ms^-2
+	float integLimit; //Limiteur de l'action integrale : mm / ms
+	float KDPos; //Coefficient derivateur : (mm / ms) / (mm / ms) = nil
+	float derivLimit; //Limiteur de l'action derivatrice : mm / ms
 
-	float maxAccel; //mm/ms/ms
-	float maxSpeed; //mm/ms
+	//Asservissement en vitesse : vitesse voulue -> vitesse de consigne
+	float KPVit; //Coefficient proportionnel : (mm / ms) / (mm / ms) = nil
 
-	float powerPerEPms; //pow / (enc / ms) : Puissance de consigne necessaire pour une vitesse de 1 encode/ms (constante moteur)
+	float speedPerPowerUnit; //(mm / ms) / pow
 
-	float dist_close; //mm : Distance a partir de laquelle s'enclenche les integrations
-	float dist_closeEnough; //mm : Distance consideree comme OK
+	float maxAccel; //mm / (ms^2)
+	float maxSpeed; //mm / ms
+
+	float dist_closeEnough; //Precision toleree en distance a la cible : mm
+	float angle_closeEnough; //Precision toleree en angle a la cible : rad
+
+	//Distance a la cible a partir de laquelle le robot est autorise a aller en arriere ; -1 pour infini.
+	//Eviter 0, sinon tout depassement devient un cauchemar (le robot doit se retourner pour revenir sur ses pas)
+	//Attention, dans la zone autorisee il n'y a plus de difference entre moveTo, moveTo_forward et moveTo_backward.
+	float dist_allowBackward;
 };
 
 enum Robot {
@@ -94,14 +104,8 @@ void initConfig(enum Robot robot) {
   		__config.leftMotorReversed = false;
  			__config.rightMotorReversed = false;
   		__config.controlPeriod = 20;
-			__config.KPStr = 0.13;
-			__config.KIStr = 0.0002;
-			__config.KPRot = 25;
-			__config.KIRot = 0.12;
 			__config.maxAccel = 0.0013;
 			__config.maxSpeed = 0.3;
-			__config.powerPerEPms = 100;
-			__config.dist_close = 50;
 			__config.dist_closeEnough = 3;
   		break;
     }
@@ -117,14 +121,8 @@ void initConfig(enum Robot robot) {
   		__config.leftMotorReversed = true;
  			__config.rightMotorReversed = false;
   		__config.controlPeriod = 20;
-			__config.KPStr = 0.13;
-			__config.KIStr = 0.0002;
-			__config.KPRot = 25;
-			__config.KIRot = 0.12;
 			__config.maxAccel = 0.0013;
 			__config.maxSpeed = 0.3;
-			__config.powerPerEPms = 50;
-			__config.dist_close = 50;
 			__config.dist_closeEnough = 3;
   		break;
     }
@@ -144,14 +142,8 @@ void initConfig(enum Robot robot) {
   		__config.leftMotorReversed = false;
  			__config.rightMotorReversed = false;
 		  __config.controlPeriod = 20;
-			__config.KPStr = 0.13;
-			__config.KIStr = 0.0002;
-			__config.KPRot = 25;
-			__config.KIRot = 0.12;
 			__config.maxAccel = 0.0013;
 			__config.maxSpeed = 0.3;
-			__config.powerPerEPms = 100;
-			__config.dist_close = 50;
 			__config.dist_closeEnough = 3;
       break;
     }

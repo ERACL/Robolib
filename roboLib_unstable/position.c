@@ -5,7 +5,7 @@
 
 // ---------- CONSTANTES A MODIFIER ----------
 
-const unsigned int positionUpdatePeriod = 5; //En ms.
+const unsigned int positionUpdatePeriod = 10; //En ms.
 
 // ---------- FIN DES CONSTANTES A MODIFIER ----------
 
@@ -76,8 +76,8 @@ void initPosition(bool isGreenSide) {
 	getConfig(&c);
 
   if (isGreenSide) {
-    __position.x = c->initialX_GreenSide;
-    __position.y = c->initialY_GreenSide;
+    __position.x = c->initialX_GreenSide * c->mmPerEncode;
+    __position.y = c->initialY_GreenSide * c->mmPerEncode;
     __position.orientation = c->initialOrientation_GreenSide * PI / 180;
   }
   else {

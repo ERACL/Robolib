@@ -68,10 +68,12 @@ task main() {
 	moveTo(-600, 0);
 	rotateTo(90);
 	moveTo(-500, 450);
-	moveTo_backwards(-500, -1000);
-	moveTo(-100, -1000);
-	moveTo(-100, -700);
-	moveTo(-400, 600);
+	moveTo_backwards(-500, -500);
+	rotateTo(180);
+	moveTo(-2200, -500);
+	moveTo(-2200, 100);
+	rotateTo(0);
+	moveTo(-300, 100);
 	while (getMovementState() != NOMVT) {wait1Msec(20);}
 	fanfare();
 }
