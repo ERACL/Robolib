@@ -1,7 +1,6 @@
 #pragma config(Sensor, S1,     cam,            sensorI2CCustom)
 #pragma config(Sensor, S2,     sonar,          sensorEV3_Ultrasonic)
 #pragma config(Sensor, S3,     redButton,      sensorEV3_Touch)
-#pragma config(Sensor, S4,     cam,            sensorI2CCustom)
 #pragma config(Motor,  motorA,          motorLeft,     tmotorEV3_Large, openLoop, encoder)
 #pragma config(Motor,  motorB,          motorRight,    tmotorEV3_Large, openLoop, encoder)
 #pragma config(Motor,  motorC,          motorOpenClaw, tmotorEV3_Large, openLoop, encoder)
@@ -16,7 +15,7 @@
 #include "mindsensors-nxtcam.h"
 
 enum {BAS,MOYEN,HAUT};
-enum {JAUNE,NOIR,ORANGE,BLEU,VERT};
+enum {JAUNE,NOIR,ORANGE,BLEU,VERT,RIEN};
 enum {A,B};
 int nblobs=0;
 long thr=10;
@@ -27,7 +26,8 @@ void detecterCombinaison();
 void ramasserCube();
 void deposerCube(int position);
 void chercherCube(int numCube,int depart);
-
+int xcube(int couleur);
+bool orienter(int couleur);
 task emergencyStop()
 {
 	while(SensorValue[redButton]==1) {wait1Msec(20);}
@@ -40,10 +40,9 @@ task main()
 	initPosition(false);
 	startTask(emergencyStop);
 	NXTCAMinit(cam);
-	detecterCombinaison();
-	wait1Msec(30000);
-	closeClaw();
-	setClawPos(HAUT);
+	openClaw();
+	setClawPos(BAS);
+	ramasserCube();wait1Msec(3000);
 	interrupteur();
 	if(combinaison[0]!=JAUNE)
 	{
@@ -61,6 +60,7 @@ task main()
 		moveTo_backwards(2130,1680);
 		moveTo(2390,1680);
 		moveTo(2390,1800);
+		orienter(combinaison[0]);
 		deposerCube(MOYEN);
 		moveTo_backwards(2130,1680);
 		moveTo(2390,1680);//en B
@@ -79,6 +79,7 @@ task main()
 	{
 		chercherCube(1,B);//part de B
 		moveTo(2390,1800);
+		orienter(combinaison[0]);
 		deposerCube(MOYEN);
 		moveTo_backwards(2390,1680);//en B
 	}
@@ -90,6 +91,7 @@ task main()
 		moveTo_backwards(2130,1680);
 		moveTo(2390,1680);
 		moveTo(2390,1800);
+		orienter(combinaison[0]);
 		deposerCube(HAUT);
 		moveTo_backwards(2390,1680);
 	}
@@ -97,6 +99,7 @@ task main()
 	{
 		chercherCube(2,B);
 		moveTo(2390,1800);
+		orienter(combinaison[0]);
 		deposerCube(HAUT);
 		moveTo_backwards(2390,1680);
 	}
@@ -117,6 +120,7 @@ task main()
 		moveTo_backwards(2130,1680);
 		moveTo(2390,1680);
 		moveTo(2390,1800);
+		orienter(combinaison[0]);
 		deposerCube(HAUT);
 		moveTo_backwards(2390,1680);//en B
 	}
@@ -125,7 +129,7 @@ task main()
 void interrupteur()
 {
 	moveTo(2970,1500);
-	rotateTo(180);wait1Msec(5000);
+	rotateTo(180);wait1Msec(7000);
 	moveTo(2390,1500);
 	moveTo(2390,1680);
 	moveTo(2130,1680);//revoir x
@@ -143,25 +147,42 @@ void interrupteur()
 
 void ramasserCube()
 {
-	openClaw();
-	wait1Msec(2000);
+	int d=100;//cm?
 	setClawPos(BAS);
 	wait1Msec(2000);
+	straight(10000);
+	while(getMovementState()==ONGOING)
+	{
+		d=SensorValue(sonar);
+		if(d<10)
+		{
+			abortMovement();
+			straight(3000);
+		}
+	}
 	closeClaw();
-	wait1Msec(2000);
-	setClawPos(HAUT);
-	wait1Msec(2000);
+	setClawPos(MOYEN);
 }
 void deposerCube(int position)
 {
-	setClawPos(position);
+	int d=100;//cm?
+	setClawPos(BAS);
 	wait1Msec(2000);
+	straight(10000);
+	while(getMovementState()==ONGOING)
+	{
+		d=SensorValue(sonar);
+		if(d<10)
+		{
+			abortMovement();
+			setClawPos(position);
+			straight(3000);
+			openClaw();
+			straight(-3000);
+			setClawPos(BAS);
+		}
+	}
 	openClaw();
-	wait1Msec(2000);
-	setClawPos(HAUT);
-	wait1Msec(2000);
-	closeClaw();
-	wait1Msec(2000);
 }
 void chercherCube(int numCube,int depart)
 {
@@ -199,6 +220,51 @@ void chercherCube(int numCube,int depart)
 			break;
 		}
 	}
+}
+int xcube(int couleur)
+{
+	blob_array _blobs;
+  bool _condensed = true;
+	nblobs = NXTCAMgetBlobs(cam, _blobs, _condensed);
+	int x=0;
+	int y=0;
+	NXTCAMgetAverageCenter(_blobs,nblobs,couleur,thr,x,y);
+	return x;
+}
+bool orienter(int couleur)
+{
+	PosData pos;
+	getPosition(&pos);
+	int orientationInit=pos.orientation;
+	int x=0;
+	displayBigTextLine(1,"%d",orientationInit);
+	int angle=orientationInit+60;
+	if(angle>180) angle-=360;
+	rotateTo(angle);
+	while(getMovementState()==ONGOING)
+	{
+		x=xcube(couleur);
+		if(x>85&&x<110)
+		{
+			abortMovement();
+			return true;
+		}
+		wait1Msec(10);
+	}
+	angle=orientationInit-60;
+	if(angle<0) angle+=180;
+	rotateTo(angle);
+	while(getMovementState()==ONGOING)
+	{
+		x=xcube(couleur);
+		if(x>85&&x<110)
+		{
+			abortMovement();
+			return true;
+		}
+		wait1Msec(10);
+	}
+	return false;
 }
 void detecterCombinaison()
 {
