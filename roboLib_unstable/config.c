@@ -2,47 +2,49 @@
 #define CONFIG_H
 
 /* Configurations des constantes des robots.
- * Dans la struct Config sont recensees toutes les constantes dependant du robot (notamment les constantes geometriques).
- * Elles sont a remplir dans la partie definition pour chaque robot. La configuration est chargee en debut de programme avec initConfig.
- * Les constantes sont ensuite obtenues dans tout le programme via getConfig().
- */
+* Dans la struct Config sont recensees toutes les constantes dependant du robot (notamment les constantes geometriques).
+* Elles sont a remplir dans la partie definition pour chaque robot. La configuration est chargee en debut de programme avec initConfig.
+* Les constantes sont ensuite obtenues dans tout le programme via getConfig().
+*/
 
 struct Config {
-  float betweenWheels; //mm
-  float mmPerEncode;
+	float betweenWheels; //mm
+	float mmPerEncode;
 
-  float initialX_GreenSide; //mm
-  float initialX_OrangeSide;
-  float initialY_GreenSide;
-  float initialY_OrangeSide;
-  float initialOrientation_GreenSide; //degres
-  float initialOrientation_OrangeSide;
+	float initialX_GreenSide; //mm
+	float initialX_OrangeSide;
+	float initialY_GreenSide;
+	float initialY_OrangeSide;
+	float initialOrientation_GreenSide; //degres
+	float initialOrientation_OrangeSide;
 
-  bool sensorFront;
-  bool sensorBack;
+	bool sensorFront;
+	bool sensorBack;
 
-  bool leftMotorReversed;
-  bool rightMotorReversed;
+	bool leftMotorReversed;
+	bool rightMotorReversed;
 
-  float securityDistance; //mm
+	float securityDistance; //mm
+	unsigned int timeout; //ms
 
-  //Constantes d'asservissement
-  float controlPeriod; //ms
+	//Constantes d'asservissement
+	unsigned int controlPeriod; //ms
 
-  //Asservissement en position : position -> vitesse voulue
+	//Asservissement en position : position -> vitesse voulue
 	float KPPos; //Coefficient proportionnel : (mm / ms) / mm = ms^-1
 	float KIPos; //Coefficient integrateur : (mm / ms) / (mm * ms) = ms^-2
-	float integLimit; //Limiteur de l'action integrale : mm / ms
-	float KDPos; //Coefficient derivateur : (mm / ms) / (mm / ms) = nil
-	float derivLimit; //Limiteur de l'action derivatrice : mm / ms
+	float integDist; //Distance a la cible a partir de laquelle l'integrateur se lance (mm)
 
-	//Asservissement en vitesse : vitesse voulue -> vitesse de consigne
-	float KPVit; //Coefficient proportionnel : (mm / ms) / (mm / ms) = nil
+	//Asservissement en vitesse : vitesse voulue -> puissance envoyée
+	float KPVit; //Coefficient proportionnel : pow / (mm / ms)
+	float KIVit; //Coefficient integrateur : pow / (mm / ms * ms) = pow / mm
 
-	float speedPerPowerUnit; //(mm / ms) / pow
-
-	float maxAccel; //mm / (ms^2)
 	float maxSpeed; //mm / ms
+	float maxAccel; //mm / ms^2
+	float maxPower; //pow
+	float maxPowerDerivative; //pow / ms
+
+	unsigned int anglePriorityFactor //Gere la preponderance du mouvement de rotation sur celui d'avance droite
 
 	float dist_closeEnough; //Precision toleree en distance a la cible : mm
 	float angle_closeEnough; //Precision toleree en angle a la cible : rad
@@ -54,7 +56,7 @@ struct Config {
 };
 
 enum Robot {
-  JIMMY, OBELIX, TULLIUS, ROCCO
+	JIMMY, OBELIX, TULLIUS, ROCCO
 };
 
 void initConfig(enum Robot robot); //A effectuer en TOUT DEBUT DE PROGRAMME, avant les autres initialisations (initPosition()...), qui en dependent.
@@ -62,24 +64,24 @@ void initConfig(enum Robot robot); //A effectuer en TOUT DEBUT DE PROGRAMME, ava
 void getConfig(struct Config const** c);
 
 /* getConfig() devrait renvoyer un pointeur vers une struct const, mais c'est impossible avec le compilateur de robotC, qui a visiblement ete code par des singes.
- * Il faut donc passer en argument un pointeur vers ce pointeur !
- * De plus robotC croit que le pointeur vers la struct est lui-meme const, ce qui necessite de l'initialiser avec NULL sous peine d'erreur de compilation !
- * Cette syntaxe se retrouvera dans toutes les fonctions de la bibliotheque qui sont censees renvoyer des structures.
- *
- * Exemple d'utilisation :
- *
- * struct Config const* c = NULL;
- * getConfig(&c);
- * float a = c->betweenWheels;
- */
+* Il faut donc passer en argument un pointeur vers ce pointeur !
+* De plus robotC croit que le pointeur vers la struct est lui-meme const, ce qui necessite de l'initialiser avec NULL sous peine d'erreur de compilation !
+* Cette syntaxe se retrouvera dans toutes les fonctions de la bibliotheque qui sont censees renvoyer des structures.
+*
+* Exemple d'utilisation :
+*
+* struct Config const* c = NULL;
+* getConfig(&c);
+* float a = c->betweenWheels;
+*/
 
 
 /* On rajoute le code normalement dans les .c a la fin des .h, devinez pourquoi.
- * ...
- * Si, si...
- * RobotC.
- * En consequence, toute variable normalement limitee au .c non-const suivront la syntaxe __nomDeVariable.
- */
+* ...
+* Si, si...
+* RobotC.
+* En consequence, toute variable normalement limitee au .c non-const suivront la syntaxe __nomDeVariable.
+*/
 
 //On notera enfin que l'absence de caracteres speciaux dans la bibliotheque est elle aussi due a RobotC.
 
@@ -91,83 +93,78 @@ struct Config __config;
 
 //TODO : A remplir !
 void initConfig(enum Robot robot) {
-  switch (robot) {
-    case JIMMY: {
-	    __config.betweenWheels = 154.7;
-  		__config.mmPerEncode = 0.53;
-  		__config.initialOrientation_GreenSide = 0;
-  		__config.initialX_GreenSide = 0;
-  		__config.initialY_GreenSide = 0;
-  		__config.sensorFront = true;
-  		__config.sensorBack = false;
+	switch (robot) {
+	case JIMMY: {
+			__config.betweenWheels = 154.7;
+			__config.mmPerEncode = 0.53;
+			__config.initialOrientation_GreenSide = 0;
+			__config.initialX_GreenSide = 0;
+			__config.initialY_GreenSide = 0;
+			__config.sensorFront = true;
+			__config.sensorBack = false;
 
-  		__config.leftMotorReversed = false;
- 			__config.rightMotorReversed = false;
-  		__config.controlPeriod = 20;
-			__config.maxAccel = 0.0013;
-			__config.maxSpeed = 0.3;
+			__config.leftMotorReversed = false;
+			__config.rightMotorReversed = false;
+			__config.controlPeriod = 30;
 			__config.dist_closeEnough = 3;
-  		break;
-    }
-    case OBELIX: {
-      __config.betweenWheels = 258;
-  		__config.mmPerEncode = 0.40249;
-  		__config.initialOrientation_GreenSide = 0;
-  		__config.initialX_GreenSide = 0;
-  		__config.initialY_GreenSide = 0;
-  		__config.initialOrientation_OrangeSide = 0;
-  		__config.initialX_OrangeSide = 0;
-  		__config.initialY_OrangeSide = 0
-  		__config.sensorFront = false;
-  		__config.sensorBack = false;
+			break;
+		}
+	case OBELIX: {
+			__config.betweenWheels = 258;
+			__config.mmPerEncode = 0.40249;
+			__config.initialOrientation_GreenSide = 0;
+			__config.initialX_GreenSide = 0;
+			__config.initialY_GreenSide = 0;
+			__config.initialOrientation_OrangeSide = 0;
+			__config.initialX_OrangeSide = 0;
+			__config.initialY_OrangeSide = 0;
+			__config.sensorFront = false;
+			__config.sensorBack = false;
 
-  		__config.leftMotorReversed = true;
- 			__config.rightMotorReversed = false;
-  		__config.controlPeriod = 20;
-			__config.maxAccel = 0.005;
-			__config.maxSpeed = 1.2;
+			__config.timeout = 10000;
+
+			__config.leftMotorReversed = true;
+			__config.rightMotorReversed = false;
+			__config.controlPeriod = 30;
+			__config.dist_closeEnough = 5;
+
+			__config.KPPos = 0.005;
+			__config.KIPos = 0.00003;
+			__config.integDist = 20;
+			__config.maxSpeed = 0.5;
+			__config.maxAccel = 0.002;
+
+			__config.anglePriorityFactor = 5;
+
+			__config.KPVit = 100;
+			__config.KIVit = 0.03;
+			__config.maxPower = 70;
+			__config.maxPowerDerivative = 0.15;
+			break;
+		}
+	case TULLIUS: {
+			__config.betweenWheels = 212;
+			__config.mmPerEncode = 0.634;
+			__config.initialOrientation_GreenSide = 0;
+			__config.initialX_GreenSide = 0;
+			__config.initialY_GreenSide = 0;
+			__config.initialOrientation_OrangeSide = 180;
+			__config.initialX_OrangeSide = 0;
+			__config.initialY_OrangeSide = 0;
+			__config.sensorFront = true;
+			__config.sensorBack = true;
+			__config.securityDistance = 230;
+
+			__config.leftMotorReversed = false;
+			__config.rightMotorReversed = false;
+			__config.controlPeriod = 20;
 			__config.dist_closeEnough = 3;
-			__config.angle_closeEnough = PI / 128;
-			__config.dist_allowBackward = 40;
-
-			__config.KPPos = 0.0024;
-			__config.KIPos = 0;
-			__config.integLimit = 0.4;
-			__config.KDPos = 0;
-			__config.derivLimit = 0.3;
-
-			__config.KPVit = 0;
-
-			__config.speedPerPowerUnit = 0.028;
-
-
-  		break;
-    }
-    case TULLIUS: {
-    	__config.betweenWheels = 212;
-  		__config.mmPerEncode = 0.634;
-  		__config.initialOrientation_GreenSide = 0;
-  		__config.initialX_GreenSide = 0;
-  		__config.initialY_GreenSide = 0;
-  		__config.initialOrientation_OrangeSide = 180;
-  		__config.initialX_OrangeSide = 0;
-  		__config.initialY_OrangeSide = 0;
-  		__config.sensorFront = true;
-  		__config.sensorBack = true;
-  		__config.securityDistance = 230;
-
-  		__config.leftMotorReversed = false;
- 			__config.rightMotorReversed = false;
-		  __config.controlPeriod = 20;
-			__config.maxAccel = 0.0013;
-			__config.maxSpeed = 0.3;
-			__config.dist_closeEnough = 3;
-      break;
-    }
-    case ROCCO: {
-      break;
-    }
-  }
+			break;
+		}
+	case ROCCO: {
+			break;
+		}
+	}
 }
 
 void getConfig(struct Config const** c) {

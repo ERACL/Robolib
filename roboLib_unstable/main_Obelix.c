@@ -17,11 +17,12 @@
 task displayPos() {
 	struct PosData pos;
 	while (true) {
-		wait1Msec(20);
+		wait1Msec(200);
 		getPosition(&pos);
-		nxtDisplayBigTextLine(1, "X %5.1f", pos.x);
-		nxtDisplayBigTextLine(3, "Y %5.1f", pos.y);
-		nxtDisplayBigTextLine(5, "O %5.1f", pos.orientation);
+		displayBigTextLine(1, "X %5.1f", pos.x);
+		displayBigTextLine(3, "Y %5.1f", pos.y);
+		displayBigTextLine(5, "O %5.1f", pos.orientation);
+		writeDebugStreamLine("X:%5.1f Y:%5.1f O:%5.1f", pos.x, pos.y, pos.orientation);
 	}
 }
 
@@ -29,10 +30,13 @@ task main()
 {
   initConfig(OBELIX);
   initPosition(true);
-  startTask(displayPos);
-  //moveTo(1000, 0);
+ 	startTask(displayPos);
 
-  motor[motorLeft] = 20;
-  motor[motorRight] = 20;
-  while (true) {}
+ 	moveTo(500, 0);
+ 	moveTo(0, -500);
+ 	moveTo(-500, 0);
+ 	moveTo(0, 0);
+ 	rotateTo(0);
+
+  while (true) {wait10Msec(100);}
 }
