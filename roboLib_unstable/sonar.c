@@ -25,11 +25,11 @@ task avoidObstacles() {
 		bool obstacleBack = false;
 #endif
 		if ((getMovementType() == MOVETO && obstacleFront)
-				|| (getMovementType() == MOVETO_BACKWARDS && obstacleBack))
+				|| (getMovementType() == MOVETO_BACKWARD && obstacleBack))
 			{ pauseMovement(); }
 		else if ((!obstacleFront && !obstacleBack)
 			  || (getMovementType() == MOVETO && !obstacleFront)
-				|| (getMovementType() == MOVETO_BACKWARDS && !obstacleBack))
+				|| (getMovementType() == MOVETO_BACKWARD && !obstacleBack))
 			{ resumeMovement(); }
 	}
 }

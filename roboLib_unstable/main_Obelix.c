@@ -32,10 +32,10 @@ task main()
   initPosition(true);
  	startTask(displayPos);
 
- 	moveTo(500, 0);
- 	moveTo(0, -500);
- 	moveTo(-500, 0);
- 	moveTo(0, 0);
+ 	moveTo_backward(500, 0);
+ 	moveTo_backward(0, -500);
+ 	moveTo_backward(-500, 0);
+ 	moveTo_backward(0, 0);
  	rotateTo(0);
 
   while (true) {wait10Msec(100);}

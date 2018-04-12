@@ -81,6 +81,9 @@ float ipow(float number, int exponent) {
 	return result;
 }
 
+float min(float n1, float n2) { return n1 < n2 ? n1 : n2; }
+float max(float n1, float n2) { return n1 < n2 ? n2 : n1; }
+
 float __targetX = 0; //mm
 float __targetY = 0; //mm
 float __targetOrientation = 0; //rad
@@ -202,16 +205,22 @@ task controlMovement() {
 				v_rot = limit(v_rot + limit(c->KPPos * angleDist + c->KIPos * i_angleDist - v_rot, c->maxAccel * c->controlPeriod), c->maxSpeed);
 			}
 			else {
-				//Cas ou le robot choisit si il avance ou recule
-				if (__mvtType == MOVETO || dist < c->integDist) {
-					v_str = limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed);
-					v_rot = limit(v_rot + limit(1 / (1 + 2 * c->dist_closeEnough / (dist < 0.001 ? 0.001 : dist)) * (c->KPPos * mod(oriDiff, PI) * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
+				//mode de test
+				if (false) {
 				}
+				//Cas ou le robot choisit si il avance ou recule
+				else if (__mvtType == MOVETO || dist < c->dist_allowBackward) {
+					v_str = limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed);
+					v_rot = limit(v_rot + limit(1 / (1 + c->rotateAttenuationCoeff * c->dist_closeEnough / max(0.001, dist)) * (c->KPPos * mod(oriDiff, PI) * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
+				}
+				//Cas ou le robot est force dans un sens de mouvement
 				else if (__mvtType == MOVETO_FORWARD) {
-
+					v_str = max(0, limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed));
+					v_rot = limit(v_rot + limit(1 / (1 + c->rotateAttenuationCoeff * c->dist_closeEnough / max(0.001, dist)) * (c->KPPos * oriDiff * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
 				}
 				else if (__mvtType == MOVETO_BACKWARD) {
-
+					v_str = min(0, limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed));
+					v_rot = limit(v_rot + limit(1 / (1 + c->rotateAttenuationCoeff * c->dist_closeEnough / max(0.001, dist)) * (c->KPPos * mod(oriDiff + PI, 2*PI) * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
 				}
 			}
 
@@ -228,7 +237,6 @@ task controlMovement() {
 		//Mise a jour des anciennes variables
 		old_posRight = posRight;
 		old_posLeft = posLeft;
-
 	} while (__mvtState != NOMVT);
 
 	motor[motorLeft] = 0;

@@ -44,10 +44,10 @@ struct Config {
 	float maxPower; //pow
 	float maxPowerDerivative; //pow / ms
 
-	unsigned int anglePriorityFactor //Gere la preponderance du mouvement de rotation sur celui d'avance droite
+	unsigned int anglePriorityFactor; //Gere la preponderance du mouvement de rotation sur celui d'avance droite
+	float rotateAttenuationCoeff; //Attenue la rotation dans les moveTo quand le robot est proche de la cible ; 0 = pas d'atténuation
 
 	float dist_closeEnough; //Precision toleree en distance a la cible : mm
-	float angle_closeEnough; //Precision toleree en angle a la cible : rad
 
 	//Distance a la cible a partir de laquelle le robot est autorise a aller en arriere ; -1 pour infini.
 	//Eviter 0, sinon tout depassement devient un cauchemar (le robot doit se retourner pour revenir sur ses pas)
@@ -103,10 +103,27 @@ void initConfig(enum Robot robot) {
 			__config.sensorFront = true;
 			__config.sensorBack = false;
 
+			__config.timeout = 10000;
+
 			__config.leftMotorReversed = false;
 			__config.rightMotorReversed = false;
 			__config.controlPeriod = 30;
-			__config.dist_closeEnough = 3;
+			__config.dist_closeEnough = 5;
+
+			__config.KPPos = 0.005;
+			__config.KIPos = 0.00003;
+			__config.integDist = 20;
+			__config.maxSpeed = 0.5;
+			__config.maxAccel = 0.002;
+
+			__config.anglePriorityFactor = 3;
+			__config.rotateAttenuationCoeff = 5;
+			__config.dist_allowBackward = 50;
+
+			__config.KPVit = 100;
+			__config.KIVit = 0.03;
+			__config.maxPower = 70;
+			__config.maxPowerDerivative = 0.15;
 			break;
 		}
 	case OBELIX: {
@@ -134,7 +151,9 @@ void initConfig(enum Robot robot) {
 			__config.maxSpeed = 0.5;
 			__config.maxAccel = 0.002;
 
-			__config.anglePriorityFactor = 5;
+			__config.anglePriorityFactor = 3;
+			__config.rotateAttenuationCoeff = 5;
+			__config.dist_allowBackward = 50;
 
 			__config.KPVit = 100;
 			__config.KIVit = 0.03;
@@ -143,22 +162,39 @@ void initConfig(enum Robot robot) {
 			break;
 		}
 	case TULLIUS: {
-			__config.betweenWheels = 212;
-			__config.mmPerEncode = 0.634;
+			__config.betweenWheels = 206;
+			__config.mmPerEncode = 0.625;
 			__config.initialOrientation_GreenSide = 0;
 			__config.initialX_GreenSide = 0;
 			__config.initialY_GreenSide = 0;
 			__config.initialOrientation_OrangeSide = 180;
 			__config.initialX_OrangeSide = 0;
 			__config.initialY_OrangeSide = 0;
-			__config.sensorFront = true;
-			__config.sensorBack = true;
+			__config.sensorFront = false;
+			__config.sensorBack = false;
 			__config.securityDistance = 230;
+
+			__config.timeout = 10000;
 
 			__config.leftMotorReversed = false;
 			__config.rightMotorReversed = false;
-			__config.controlPeriod = 20;
-			__config.dist_closeEnough = 3;
+			__config.controlPeriod = 30;
+			__config.dist_closeEnough = 5;
+
+			__config.KPPos = 0.002;
+			__config.KIPos = 0;
+			__config.integDist = 15;
+			__config.maxSpeed = 0.4;
+			__config.maxAccel = 0.0015;
+
+			__config.anglePriorityFactor = 3;
+			__config.rotateAttenuationCoeff = 5;
+			__config.dist_allowBackward = 50;
+
+			__config.KPVit = 140;
+			__config.KIVit = 1.3;
+			__config.maxPower = 80;
+			__config.maxPowerDerivative = 10;
 			break;
 		}
 	case ROCCO: {
