@@ -185,8 +185,8 @@ task controlMovement() {
 		if (shouldStop) {
 			v_rot = 0;
 			v_str = 0;
-			p_str = (int)limit(c->KPVit * vDiff_str + c->KIVit * i_vDiff_str, c->maxPower);
-			p_rot = (int)limit(c->KPVit * vDiff_rot + c->KIVit * i_vDiff_rot, c->maxPower);
+			p_str -= (int)limit(p_str, c->maxPowerDerivative * c->controlPeriod);
+			p_rot -= (int)limit(p_rot, c->maxPowerDerivative * c->controlPeriod);
 
 			if (posRight == old_posRight && posLeft == old_posLeft && __mvtState != PAUSED) {
 				p_str = 0;
@@ -205,8 +205,12 @@ task controlMovement() {
 				v_rot = limit(v_rot + limit(c->KPPos * angleDist + c->KIPos * i_angleDist - v_rot, c->maxAccel * c->controlPeriod), c->maxSpeed);
 			}
 			else {
-				//mode de test
+				//mode de test d'asservissement en vitesse
 				if (false) {
+					v_str = 0;
+					v_rot = 0.4;
+					if (pos.orientation > PI*20)
+						v_rot = 0;
 				}
 				//Cas ou le robot choisit si il avance ou recule
 				else if (__mvtType == MOVETO || dist < c->dist_allowBackward) {

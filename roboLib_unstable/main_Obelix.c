@@ -1,8 +1,8 @@
 #pragma config(Hubs,  S1, MatrxRbtcs, none,     none,     none)
 #pragma config(Sensor, S1,     ,               sensorI2CMuxController)
-#pragma config(Motor,  mtr_Matrix_S1_1, motorRight,        tmotorMatrix, openLoop)
+#pragma config(Motor,  mtr_Matrix_S1_1, motorLeft,        tmotorMatrix, openLoop)
 #pragma config(Motor,  mtr_Matrix_S1_2, motorE,     tmotorMatrix, openLoop)
-#pragma config(Motor,  mtr_Matrix_S1_3, motorLeft,        tmotorMatrix, openLoop)
+#pragma config(Motor,  mtr_Matrix_S1_3, motorRight,        tmotorMatrix, openLoop)
 #pragma config(Motor,  mtr_Matrix_S1_4, motorG,    tmotorMatrix, openLoop)
 #pragma config(Servo,  srvo_Matrix_S1_1, servo1,               tServoNone)
 #pragma config(Servo,  srvo_Matrix_S1_2, servo2,               tServoNone)
@@ -32,10 +32,11 @@ task main()
   initPosition(true);
  	startTask(displayPos);
 
- 	moveTo_backward(500, 0);
- 	moveTo_backward(0, -500);
- 	moveTo_backward(-500, 0);
- 	moveTo_backward(0, 0);
+ 	moveTo_backward(300, 0);
+ 	moveTo(0, 0);
+ 	rotateTo(180);
+ 	moveTo(0, 100);
+ 	moveTo(0, 0);
  	rotateTo(0);
 
   while (true) {wait10Msec(100);}

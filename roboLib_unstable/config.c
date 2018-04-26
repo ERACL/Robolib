@@ -127,8 +127,8 @@ void initConfig(enum Robot robot) {
 			break;
 		}
 	case OBELIX: {
-			__config.betweenWheels = 258;
-			__config.mmPerEncode = 0.40249;
+			__config.betweenWheels = 250;
+			__config.mmPerEncode = 0.408;
 			__config.initialOrientation_GreenSide = 0;
 			__config.initialX_GreenSide = 0;
 			__config.initialY_GreenSide = 0;
@@ -138,27 +138,27 @@ void initConfig(enum Robot robot) {
 			__config.sensorFront = false;
 			__config.sensorBack = false;
 
-			__config.timeout = 10000;
+			__config.timeout = 1000000;
 
 			__config.leftMotorReversed = true;
 			__config.rightMotorReversed = false;
-			__config.controlPeriod = 30;
+			__config.controlPeriod = 5;
 			__config.dist_closeEnough = 5;
 
-			__config.KPPos = 0.005;
-			__config.KIPos = 0.00003;
-			__config.integDist = 20;
-			__config.maxSpeed = 0.5;
-			__config.maxAccel = 0.002;
+			__config.KPPos = 0.01;
+			__config.KIPos = 0.00007;
+			__config.integDist = 40;
+			__config.maxSpeed = 0.7;
+			__config.maxAccel = 0.005;
 
-			__config.anglePriorityFactor = 3;
+			__config.anglePriorityFactor = 20;
 			__config.rotateAttenuationCoeff = 5;
 			__config.dist_allowBackward = 50;
 
-			__config.KPVit = 100;
-			__config.KIVit = 0.03;
-			__config.maxPower = 70;
-			__config.maxPowerDerivative = 0.15;
+			__config.KPVit = 70;
+			__config.KIVit = 0.04;
+			__config.maxPower = 80;
+			__config.maxPowerDerivative = 0.5;
 			break;
 		}
 	case TULLIUS: {
