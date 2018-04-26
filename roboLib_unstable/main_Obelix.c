@@ -1,9 +1,10 @@
 #pragma config(Hubs,  S1, MatrxRbtcs, none,     none,     none)
 #pragma config(Sensor, S1,     ,               sensorI2CMuxController)
-#pragma config(Motor,  mtr_Matrix_S1_1, motorLeft,        tmotorMatrix, openLoop)
-#pragma config(Motor,  mtr_Matrix_S1_2, motorE,     tmotorMatrix, openLoop)
-#pragma config(Motor,  mtr_Matrix_S1_3, motorRight,        tmotorMatrix, openLoop)
-#pragma config(Motor,  mtr_Matrix_S1_4, motorG,    tmotorMatrix, openLoop)
+#pragma config(Motor,  motorA,          alternateur,   tmotorNXT, PIDControl, encoder)
+#pragma config(Motor,  mtr_Matrix_S1_1, motorLeft,     tmotorMatrix, openLoop)
+#pragma config(Motor,  mtr_Matrix_S1_2, motorE,        tmotorMatrix, openLoop)
+#pragma config(Motor,  mtr_Matrix_S1_3, motorRight,    tmotorMatrix, openLoop)
+#pragma config(Motor,  mtr_Matrix_S1_4, catapulte,     tmotorMatrix, openLoop)
 #pragma config(Servo,  srvo_Matrix_S1_1, servo1,               tServoNone)
 #pragma config(Servo,  srvo_Matrix_S1_2, servo2,               tServoNone)
 #pragma config(Servo,  srvo_Matrix_S1_3, servo3,               tServoNone)
@@ -26,18 +27,39 @@ task displayPos() {
 	}
 }
 
+int thrownBalls = 0;
+
+void wiggle() {
+	motor[motorLeft] = 50;
+	motor[motorRight] = 50;
+	wait1Msec(20);
+	motor[motorLeft] = -50;
+	motor[motorRight] = -50;
+	wait1Msec(20);
+	motor[motorLeft] = 0;
+	motor[motorRight] = 0;
+}
+
+void throw() {
+	motor[alternateur]=40; wait1Msec(150);
+	motor[alternateur]=0;	wait1Msec(100);
+	motor[alternateur]=-40;	wait1Msec(150);
+	motor[alternateur]=0; wait1Msec(400);
+	motor[catapulte]=200; wait1Msec(200);
+	motor[catapulte]=0;	wait1Msec(100);
+	motor[catapulte]=-15;	wait1Msec(200);
+	motor[catapulte]=0;
+	wiggle();
+}
+
 task main()
 {
   initConfig(OBELIX);
   initPosition(true);
  	startTask(displayPos);
 
- 	moveTo_backward(300, 0);
- 	moveTo(0, 0);
- 	rotateTo(180);
- 	moveTo(0, 100);
- 	moveTo(0, 0);
- 	rotateTo(0);
-
-  while (true) {wait10Msec(100);}
+  while (true) {
+  	throw();
+  	while (nNxtButtonPressed == -1) (wait1Msec(20));
+  }
 }
