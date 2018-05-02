@@ -4,8 +4,6 @@
 #include "config.c"
 #include "movement.c"
 
-// Les deux fonctions suivantes permettent d'obtenir la distance (en mm) entre le sonar avant (respectivement arriere) du robot et l'obstacle detecte.
-
 task avoidObstacles() {
 	struct Config const* c = NULL;
 	getConfig(&c);
@@ -22,14 +20,13 @@ task avoidObstacles() {
 #else
 		bool obstacleBack = false;
 #endif
-		if ((getMovementType() == MOVETO && (obstacleFront || obstacleBack))
-				|| (getMovementType() == MOVETO_FORWARD && obstacleFront)
+		if ((getMovementType() == MOVETO && obstacleFront)
 				|| (getMovementType() == MOVETO_BACKWARD && obstacleBack))
-			{ pauseMovement(); }
+			{ pauseMovement(); displayBigTextLine(7, "obstacle"); }
 		else if ((!obstacleFront && !obstacleBack)
-			  || (getMovementType() == MOVETO_FORWARD && !obstacleFront)
+			  || (getMovementType() == MOVETO && !obstacleFront)
 				|| (getMovementType() == MOVETO_BACKWARD && !obstacleBack))
-			{ resumeMovement(); }
+			{ resumeMovement(); displayBigTextLine(7, "OK");}
 	}
 }
 
