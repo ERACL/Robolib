@@ -35,7 +35,8 @@ void fanfare() {
 }
 
 task emergencyStop() {
-	while (SensorValue[redButton] == 0) { wait1Msec(20); }
+	clearTimer(T4);
+	while (SensorValue[redButton] == 0 && time1[T4] < 99000) { wait1Msec(20); }
 	stopAllTasks();
 }
 
@@ -64,35 +65,46 @@ task main() {
   PosData pos;
   struct Config const *c = NULL;
 
+
   moveTo(-100, 0);
 	moveTo(-660, -400);
 	moveTo(-660, 400);
 	moveTo_backwards(-660, -700);
-	moveTo_backwards(-350, -1160);
-	moveTo_backwards(-350, -1450);
+	moveTo_backwards(-300, -1160);
+	moveTo_backwards(-300, -1450);
 	while (getMovementState() != NOMVT) {wait1Msec(20);}
 
 	getConfig(&c);
 	__position.y = -1500 / c->mmPerEncode;
-	__position.x = -350 / c->mmPerEncode;
+	__position.x = -300 / c->mmPerEncode;
 	__position.orientation = PI / 2;
 
-	moveTo(-350, -1400);
-	moveTo_backwards(100, -1400);
+	moveTo(-300, -1300);
+	moveTo_backwards(100, -1300);
 	while (getMovementState() != NOMVT) {wait1Msec(20);}
 
 	getConfig(&c);
-	__position.y = -1400 / c->mmPerEncode;
+	__position.y = -1300 / c->mmPerEncode;
 	__position.x = 0 / c->mmPerEncode;
 	__position.orientation = PI;
 
 
-	moveTo(-600, -1400);
+	moveTo(-550, -1300);
 	moveTo_backwards(-1125, -1100);
-	moveTo(-775, -1250);
-	moveTo_backwards(-1400, -1250);
-	moveTo(-500, -100);
-	moveTo(-500, 400);
+	moveTo(-825, -1200);
+	moveTo_backwards(-1400, -1200);
+	moveTo(-400, -100);
+	moveTo(-600, 600);
+	while (getMovementState() != NOMVT) {wait1Msec(20);}
+	__position.orientation = PI/2;
+
+	moveTo_backwards(-600, 200);
+	moveTo_backwards(-1100, 200);
+	while (getMovementState() != NOMVT) {wait1Msec(20);}
+
+	//Enlever détection d'obstacle
+	doAvoidObstacles = false;
+	moveTo_backwards(-1100, 800);
 
 	/*moveTo(-100, 0);
 	moveTo(-500, -500);

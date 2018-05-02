@@ -122,23 +122,24 @@ void initConfig(enum Robot robot) {
 
 			__config.KPVit = 100;
 			__config.KIVit = 0.03;
-			__config.maxPower = 70;
+			__config.maxPower = 80;
 			__config.maxPowerDerivative = 0.15;
 			break;
 		}
 	case OBELIX: {
 			__config.betweenWheels = 250;
 			__config.mmPerEncode = 0.408;
-			__config.initialOrientation_GreenSide = 0;
+			__config.initialOrientation_GreenSide = 90;
 			__config.initialX_GreenSide = 0;
 			__config.initialY_GreenSide = 0;
-			__config.initialOrientation_OrangeSide = 0;
+			__config.initialOrientation_OrangeSide = -90;
 			__config.initialX_OrangeSide = 0;
 			__config.initialY_OrangeSide = 0;
-			__config.sensorFront = false;
-			__config.sensorBack = false;
+			__config.sensorFront = true;
+			__config.sensorBack = true;
+			__config.securityDistance = 200;
 
-			__config.timeout = 1000000;
+			__config.timeout = 10000;
 
 			__config.leftMotorReversed = true;
 			__config.rightMotorReversed = false;
@@ -148,7 +149,7 @@ void initConfig(enum Robot robot) {
 			__config.KPPos = 0.01;
 			__config.KIPos = 0.00007;
 			__config.integDist = 40;
-			__config.maxSpeed = 0.7;
+			__config.maxSpeed = 0.5;
 			__config.maxAccel = 0.005;
 
 			__config.anglePriorityFactor = 20;

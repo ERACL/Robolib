@@ -139,7 +139,7 @@ void initConfig(enum Robot robot) {
   		__config.initialY_OrangeSide = 0;
   		__config.sensorFront = true;
   		__config.sensorBack = true;
-  		__config.securityDistance = 230;
+  		__config.securityDistance = 200;
 
   		__config.leftMotorReversed = false;
  			__config.rightMotorReversed = false;
@@ -148,8 +148,8 @@ void initConfig(enum Robot robot) {
 			__config.KIStr = 0.0002;
 			__config.KPRot = 25;
 			__config.KIRot = 0.12;
-			__config.maxAccel = 0.0013;
-			__config.maxSpeed = 0.3;
+			__config.maxAccel = 0.001;
+			__config.maxSpeed = 0.25;
 			__config.powerPerEPms = 100;
 			__config.dist_close = 50;
 			__config.dist_closeEnough = 3;

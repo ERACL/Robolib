@@ -9,6 +9,8 @@
 #include "config.c"
 #include "position.c"
 
+bool didTimeout = false;
+
 void moveTo(float x, float y); //x et y en mm, positions absolues (cible)
 
 void moveTo_forward(float x, float y); //Force le robot a aller vers l'avant dans le mouvement
@@ -180,7 +182,8 @@ task controlMovement() {
 		shouldStop |= __mvtType == ROTATETO && fabs(angleDist) < c->dist_closeEnough;
 		shouldStop |= __mvtState == PAUSED;
 		shouldStop |= __mvtState == ABORTED;
-		shouldStop |= (unsigned int) (counter * c->controlPeriod) > c->timeout;
+		didTimeout = (unsigned int) (counter * c->controlPeriod) > c->timeout;
+		shouldStop |= didTimeout;
 
 		if (shouldStop) {
 			v_rot = 0;
@@ -192,6 +195,7 @@ task controlMovement() {
 				p_str = 0;
 				p_rot = 0;
 				__mvtState = NOMVT;
+
 				//Attention : il faut attendre un petit temps avant de lancer un autre mouvement ;
 				//sinon, __mvtState peut etre remodifie avant la fin de la boucle while.
 				//S'ensuivent deux asservissements simultanes et donc un gros bazar.

@@ -6,17 +6,17 @@
 
 // Les deux fonctions suivantes permettent d'obtenir la distance (en mm) entre le sonar avant (respectivement arriere) du robot et l'obstacle detecte.
 
+bool doAvoidObstacles = true;
+
 task avoidObstacles() {
 	struct Config const* c = NULL;
 	getConfig(&c);
 
-	while (true) {
+	while (doAvoidObstacles) {
 		wait1Msec(20);
 #ifdef sensorFront
-		displayBigTextLine(7, "1");
 		bool obstacleFront = SensorValue[sensorFront] * 10 < c->securityDistance;
 #else
-		displayBigTextLine(9, "2");
 		bool obstacleFront = false;
 #endif
 #ifdef sensorBack
@@ -26,11 +26,11 @@ task avoidObstacles() {
 #endif
 		if ((getMovementType() == MOVETO && obstacleFront)
 				|| (getMovementType() == MOVETO_BACKWARDS && obstacleBack))
-			{ pauseMovement(); }
+			{ pauseMovement(); displayBigTextLine(7, "obstacle"); }
 		else if ((!obstacleFront && !obstacleBack)
 			  || (getMovementType() == MOVETO && !obstacleFront)
 				|| (getMovementType() == MOVETO_BACKWARDS && !obstacleBack))
-			{ resumeMovement(); }
+			{ resumeMovement(); displayBigTextLine(7, "OK");}
 	}
 }
 

@@ -55,11 +55,11 @@ task main() {
   initPosition(true);
   setSoundVolume(30);
 
-//while (SensorValue[redButton] == 1) { wait1Msec(20); }
+	while (SensorValue[redButton] == 1) { wait1Msec(20); }
   wait1Msec(100);
-//startTask(emergencyStop);
+	startTask(emergencyStop);
 	startTask(displayPos);
-//startTask(avoidObstacles);
+	startTask(avoidObstacles);
 
   PosData pos;
 

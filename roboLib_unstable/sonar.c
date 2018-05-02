@@ -13,10 +13,8 @@ task avoidObstacles() {
 	while (true) {
 		wait1Msec(20);
 #ifdef sensorFront
-		displayBigTextLine(7, "1");
 		bool obstacleFront = SensorValue[sensorFront] * 10 < c->securityDistance;
 #else
-		displayBigTextLine(9, "2");
 		bool obstacleFront = false;
 #endif
 #ifdef sensorBack
@@ -24,11 +22,12 @@ task avoidObstacles() {
 #else
 		bool obstacleBack = false;
 #endif
-		if ((getMovementType() == MOVETO && obstacleFront)
+		if ((getMovementType() == MOVETO && (obstacleFront || obstacleBack))
+				|| (getMovementType() == MOVETO_FORWARD && obstacleFront)
 				|| (getMovementType() == MOVETO_BACKWARD && obstacleBack))
 			{ pauseMovement(); }
 		else if ((!obstacleFront && !obstacleBack)
-			  || (getMovementType() == MOVETO && !obstacleFront)
+			  || (getMovementType() == MOVETO_FORWARD && !obstacleFront)
 				|| (getMovementType() == MOVETO_BACKWARD && !obstacleBack))
 			{ resumeMovement(); }
 	}
