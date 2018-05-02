@@ -212,9 +212,10 @@ task controlMovement() {
 				//mode de test d'asservissement en vitesse
 				if (false) {
 					v_str = 0;
-					v_rot = 0.4;
-					if (pos.orientation > PI*20)
+					v_rot = 0.3;
+					if (pos.orientation > 20*PI) {
 						v_rot = 0;
+					}
 				}
 				//Cas ou le robot choisit si il avance ou recule
 				else if (__mvtType == MOVETO || dist < c->dist_allowBackward) {

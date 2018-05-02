@@ -95,35 +95,38 @@ struct Config __config;
 void initConfig(enum Robot robot) {
 	switch (robot) {
 	case JIMMY: {
-			__config.betweenWheels = 154.7;
+			__config.betweenWheels = 150;
 			__config.mmPerEncode = 0.53;
 			__config.initialOrientation_GreenSide = 0;
 			__config.initialX_GreenSide = 0;
 			__config.initialY_GreenSide = 0;
+			__config.initialOrientation_OrangeSide = 0;
+			__config.initialX_OrangeSide = 0;
+			__config.initialY_OrangeSide = 0;
 			__config.sensorFront = true;
 			__config.sensorBack = false;
 
-			__config.timeout = 10000;
+			__config.timeout = 7000;
 
-			__config.leftMotorReversed = false;
-			__config.rightMotorReversed = false;
+			__config.leftMotorReversed = true;
+			__config.rightMotorReversed = true;
 			__config.controlPeriod = 30;
 			__config.dist_closeEnough = 5;
 
-			__config.KPPos = 0.005;
-			__config.KIPos = 0.00003;
-			__config.integDist = 20;
-			__config.maxSpeed = 0.5;
-			__config.maxAccel = 0.002;
+			__config.KPPos = 0.002;
+			__config.KIPos = 0.00001;
+			__config.integDist = 15;
+			__config.maxSpeed = 0.3;
+			__config.maxAccel = 0.0015;
 
 			__config.anglePriorityFactor = 3;
 			__config.rotateAttenuationCoeff = 5;
 			__config.dist_allowBackward = 50;
 
-			__config.KPVit = 100;
-			__config.KIVit = 0.03;
+			__config.KPVit = 140;
+			__config.KIVit = 1.3;
 			__config.maxPower = 80;
-			__config.maxPowerDerivative = 0.15;
+			__config.maxPowerDerivative = 10;
 			break;
 		}
 	case OBELIX: {
