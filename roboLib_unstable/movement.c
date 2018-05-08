@@ -72,23 +72,20 @@ float mod(float number, float mod) {
 	return number;
 }
 
-float ipow(float number, int exponent) {
-	if (number == 0)
-		return 0;
-	float result = 1;
-	for (int i = 0; i < (exponent < 0 ? -exponent : exponent); i++)
-		result *= number;
-	if (exponent < 0)
-		result = 1 / result;
-	return result;
-}
-
 float min(float n1, float n2) { return n1 < n2 ? n1 : n2; }
 float max(float n1, float n2) { return n1 < n2 ? n2 : n1; }
 
 float __targetX = 0; //mm
 float __targetY = 0; //mm
 float __targetOrientation = 0; //rad
+
+float getDistAdapter(float oriDiff, float criticalOriDiff) {
+	if (oriDiff < 0)
+		return getDistAdapter(-oriDiff, criticalOriDiff);
+	if (oriDiff > PI - criticalOriDiff)
+		return -getDistAdapter(PI - oriDiff, criticalOriDiff);
+	return max(1 - oriDiff / criticalOriDiff, 0);
+}
 
 task controlMovement() {
 	struct Config const* c = NULL;
@@ -103,7 +100,7 @@ task controlMovement() {
 	//old_donnee : donnee du cycle d'asservissement precedent (utile pour les derivees)
 
 	//Distance a la cible (mm)
-	float dist = sqrt(ipow(pos.x - __targetX, 2) + ipow(pos.y - __targetY, 2));
+	float dist = sqrt(pow(pos.x - __targetX, 2) + pow(pos.y - __targetY, 2));
 
 	//Distance a l'orientation cible (mm)
 	float angleDist = mod(__targetOrientation - pos.orientation, 2 * PI) * c->betweenWheels / 2;
@@ -114,29 +111,55 @@ task controlMovement() {
 	if (__targetX - pos.x + dist != 0)
 		oriDiff = mod(2 * atan((__targetY - pos.y) / (__targetX - pos.x + dist)) - pos.orientation, 2 * PI);
 
-	//Distance a la cible ponderee par l'orientation (mm)
-	float dist_adapted = dist * ipow(cos(oriDiff), c->anglePriorityFactor*2+1);
+	//Distance ponderee par le positionnement du robot et son mouvement (mm)
+	float dist_adapted = 0;
+	if (fabs(oriDiff) < PI/2) {
+		if (__mvtType == MOVETO_BACKWARD && dist > c->dist_allowBackward)
+			dist_adapted = 0;
+		else
+			dist_adapted = min(dist, c->maxEffectiveDist) * getDistAdapter(oriDiff, max(c->dist_closeEnough / limit(dist, c->dist_closeEnough, c->maxEffectiveDist), 0.1));
+	}
+	else {
+		if (__mvtType == MOVETO_FORWARD && dist > c->dist_allowBackward)
+			dist_adapted = 0;
+		else
+			dist_adapted = min(dist, c->maxEffectiveDist) * getDistAdapter(oriDiff, max(c->dist_closeEnough / limit(dist, c->dist_closeEnough, c->maxEffectiveDist), 0.1));
+	}
 	float i_dist_adapted = 0;
 
+	//Angle d'alignement adapte pour le mouvement choisi (rad)
+	float oriDiff_adapted = 0;
+	if (__mvtType == MOVETO_FORWARD && dist > c->dist_allowBackward)
+		oriDiff_adapted = limit(oriDiff, c->maxEffectiveDist / (c->betweenWheels/2));
+	else if (__mvtType == MOVETO_BACKWARD && dist > c->dist_allowBackward)
+		oriDiff_adapted = limit(mod(PI + oriDiff, 2*PI), c->maxEffectiveDist / (c->betweenWheels/2));
+	else
+		oriDiff_adapted = limit(mod(oriDiff, PI), c->maxEffectiveDist / (c->betweenWheels/2));
+	float i_oriDiff_adapted = 0;
+
 	//Position des moteurs (permet d'obtenir les vitesses) (mm)
-	int posRight = nMotorEncoder[motorRight] * (c->rightMotorReversed ? -1 : 1) * c->mmPerEncode;
-	int posLeft = nMotorEncoder[motorLeft] * (c->leftMotorReversed ? -1 : 1) * c->mmPerEncode;
-	int old_posRight = posRight;
-	int old_posLeft = posLeft;
+	float posRight = nMotorEncoder[motorRight] * (c->rightMotorReversed ? -1 : 1) * c->mmPerEncode;
+	float posLeft = nMotorEncoder[motorLeft] * (c->leftMotorReversed ? -1 : 1) * c->mmPerEncode;
+	float old_posRight = posRight;
+	float old_posLeft = posLeft;
 
 	//Vitesse de consigne obtenue par asservissement en position (mm / ms)
 	float v_str = 0;
 	float v_rot = 0;
 
+	//Vitesse de consigne ramenée aux moteurs (mm / ms)
+	float v_right = v_str + v_rot;
+	float v_left = v_str - v_rot;
+
 	//Difference entre vitesse de consigne et vitesse réelle (mm / ms)
-	float vDiff_str = v_str - (float)(posRight + posLeft - old_posRight - old_posLeft) / 2 / c->controlPeriod;
-	float vDiff_rot = v_rot - (float)((posRight - old_posRight) - (posLeft - old_posLeft)) / 2 / c->controlPeriod;
-	float i_vDiff_str = 0;
-	float i_vDiff_rot = 0;
+	float vDiff_right = v_right - (posRight - old_posRight) / c->controlPeriod;
+	float vDiff_left = v_left - (posLeft - old_posLeft) / c->controlPeriod;
+	float i_vDiff_right = 0;
+	float i_vDiff_left = 0;
 
 	//Puissance envoyee aux moteurs obtenue par asservissement en vitesse (pow)
-	float p_str = 0;
-	float p_rot = 0;
+	float p_right = 0;
+	float p_left = 0;
 
 	//Compteur de cycles passes (evite d'utiliser un timer)
 	unsigned int counter = 0;
@@ -149,29 +172,46 @@ task controlMovement() {
 		pos.x *= c->mmPerEncode;
 		pos.y *= c->mmPerEncode;
 
+		//Mise a jour des variables de position
 		//Mise a jour des variables integrees (partie 1)
-		i_vDiff_str += vDiff_str * c->controlPeriod / 2;
-		i_vDiff_rot += vDiff_rot * c->controlPeriod / 2;
 		i_angleDist = fabs(angleDist) < c->integDist ? i_angleDist + angleDist * c->controlPeriod / 2 : 0;
 		i_dist_adapted = fabs(dist_adapted) < c->integDist ? i_dist_adapted + dist_adapted * c->controlPeriod / 2 : 0;
+		i_oriDiff_adapted = fabs(oriDiff_adapted) * c->betweenWheels / 2 < c->integDist ? i_oriDiff_adapted + oriDiff_adapted * c->controlPeriod / 2 : 0;
 
 		//Mise a jour des variables instantanees
-		dist = sqrt(ipow(pos.x - __targetX, 2) + ipow(pos.y - __targetY, 2));
+		dist = sqrt(pow(pos.x - __targetX, 2) + pow(pos.y - __targetY, 2));
 		angleDist = mod(__targetOrientation - pos.orientation, 2 * PI) * c->betweenWheels / 2;
 		oriDiff = PI - pos.orientation;
 		if (__targetX - pos.x + dist != 0)
 			oriDiff = mod(2 * atan((__targetY - pos.y) / (__targetX - pos.x + dist)) - pos.orientation, 2 * PI);
-		dist_adapted = dist * ipow(cos(oriDiff), c->anglePriorityFactor*2+1);
+
+		if (fabs(oriDiff) < PI/2) {
+			if (__mvtType == MOVETO_BACKWARD && dist > c->dist_allowBackward)
+				dist_adapted = 0;
+			else
+				dist_adapted = min(dist, c->maxEffectiveDist) * getDistAdapter(oriDiff, max(c->dist_closeEnough / limit(dist, c->dist_closeEnough, c->maxEffectiveDist), 0.1));
+		}
+		else {
+			if (__mvtType == MOVETO_FORWARD && dist > c->dist_allowBackward)
+				dist_adapted = 0;
+			else
+				dist_adapted = min(dist, c->maxEffectiveDist) * getDistAdapter(oriDiff, max(c->dist_closeEnough / limit(dist, c->dist_closeEnough, c->maxEffectiveDist), 0.1));
+		}
+
+		if (__mvtType == MOVETO_FORWARD && dist > c->dist_allowBackward)
+			oriDiff_adapted = limit(oriDiff, c->maxEffectiveDist / (c->betweenWheels/2));
+		else if (__mvtType == MOVETO_BACKWARD && dist > c->dist_allowBackward)
+			oriDiff_adapted = limit(mod(PI + oriDiff, 2*PI), c->maxEffectiveDist / (c->betweenWheels/2));
+		else
+			oriDiff_adapted = limit(mod(oriDiff, PI), c->maxEffectiveDist / (c->betweenWheels/2));
+
 		posRight = nMotorEncoder[motorRight] * (c->rightMotorReversed ? -1 : 1) * c->mmPerEncode;
 		posLeft = nMotorEncoder[motorLeft] * (c->leftMotorReversed ? -1 : 1) * c->mmPerEncode;
-		vDiff_str = v_str - (float)(posRight + posLeft - old_posRight - old_posLeft) / 2 / c->controlPeriod;
-		vDiff_rot = v_rot - (float)((posRight - old_posRight) - (posLeft - old_posLeft)) / 2 / c->controlPeriod;
 
 		//Mise a jour des variables integrees (partie 2)
-		i_vDiff_str += vDiff_str * c->controlPeriod / 2;
-		i_vDiff_rot += vDiff_rot * c->controlPeriod / 2;
 		i_angleDist = fabs(angleDist) < c->integDist ? i_angleDist + angleDist * c->controlPeriod / 2 : 0;
 		i_dist_adapted = fabs(dist_adapted) < c->integDist ? i_dist_adapted + dist_adapted * c->controlPeriod / 2 : 0;
+		i_oriDiff_adapted = fabs(oriDiff_adapted) * c->betweenWheels / 2 < c->integDist ? i_oriDiff_adapted + oriDiff_adapted * c->controlPeriod / 2 : 0;
 
 		//Mise a jour du compteur (hors pause)
 		if (__mvtState != PAUSED)
@@ -186,14 +226,14 @@ task controlMovement() {
 		shouldStop |= didTimeout;
 
 		if (shouldStop) {
-			v_rot = 0;
-			v_str = 0;
-			p_str -= (int)limit(p_str, c->maxPowerDerivative * c->controlPeriod);
-			p_rot -= (int)limit(p_rot, c->maxPowerDerivative * c->controlPeriod);
+			v_right = 0;
+			v_left = 0;
+			p_right -= (int)limit(p_right, c->maxPowerDerivative * c->controlPeriod);
+			p_left -= (int)limit(p_left, c->maxPowerDerivative * c->controlPeriod);
 
 			if (posRight == old_posRight && posLeft == old_posLeft && __mvtState != PAUSED) {
-				p_str = 0;
-				p_rot = 0;
+				p_right = 0;
+				p_left = 0;
 				__mvtState = NOMVT;
 
 				//Attention : il faut attendre un petit temps avant de lancer un autre mouvement ;
@@ -204,48 +244,53 @@ task controlMovement() {
 		else {
 
 			//Asservissement en position : obtention de la vitesse de consigne voulue
-			if (__mvtType == ROTATETO) {
+			if (false) { //mode de test d'asservissement en vitesse
+					v_rot = 0.1*sin((float)time1[T1]/1000/2*PI/0.5);
+					//v_str = 0.3*sin((float)time1[T1]/1000/2*PI/0.25);
+			}
+			else if (__mvtType == ROTATETO) {
 				v_str = limit(v_str + limit(c->KPPos * dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed);
 				v_rot = limit(v_rot + limit(c->KPPos * angleDist + c->KIPos * i_angleDist - v_rot, c->maxAccel * c->controlPeriod), c->maxSpeed);
 			}
 			else {
-				//mode de test d'asservissement en vitesse
-				if (false) {
-					v_str = 0;
-					v_rot = 0.3;
-					if (pos.orientation > 20*PI) {
-						v_rot = 0;
-					}
-				}
-				//Cas ou le robot choisit si il avance ou recule
-				else if (__mvtType == MOVETO || dist < c->dist_allowBackward) {
-					v_str = limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed);
-					v_rot = limit(v_rot + limit(1 / (1 + c->rotateAttenuationCoeff * c->dist_closeEnough / max(0.001, dist)) * (c->KPPos * mod(oriDiff, PI) * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
-				}
-				//Cas ou le robot est force dans un sens de mouvement
-				else if (__mvtType == MOVETO_FORWARD) {
-					v_str = max(0, limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed));
-					v_rot = limit(v_rot + limit(1 / (1 + c->rotateAttenuationCoeff * c->dist_closeEnough / max(0.001, dist)) * (c->KPPos * oriDiff * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
-				}
-				else if (__mvtType == MOVETO_BACKWARD) {
-					v_str = min(0, limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed));
-					v_rot = limit(v_rot + limit(1 / (1 + c->rotateAttenuationCoeff * c->dist_closeEnough / max(0.001, dist)) * (c->KPPos * mod(oriDiff + PI, 2*PI) * c->betweenWheels / 2 - v_rot), c->maxAccel * c->controlPeriod), c->maxSpeed);
-				}
+				v_str = limit(v_str + limit(c->KPPos * dist_adapted + c->KIPos * i_dist_adapted - v_str, c->maxAccel * c->controlPeriod), c->maxSpeed);
+				v_rot = limit(v_rot + limit(c->KPPos*c->betweenWheels/2 * oriDiff_adapted + c->KIPos*c->betweenWheels/2 * i_oriDiff_adapted - v_rot, c->maxAccel * c->controlPeriod), c->maxSpeed);
 			}
 
+			//Mise a jour des variables de commande
+			//Mise a jour des variables integrees (partie 1)
+			i_vDiff_right += vDiff_right * c->controlPeriod / 2;
+			i_vDiff_left += vDiff_left * c->controlPeriod / 2;
+
+			//Mise a jour des variables instantanees
+			v_right = v_str + v_rot;
+			v_left = v_str - v_rot;
+			vDiff_right = v_right - (posRight - old_posRight) / c->controlPeriod;
+			vDiff_left = v_left - (posLeft - old_posLeft) / c->controlPeriod;
+
+			//Mise a jour des variables integrees (partie 2)
+			i_vDiff_right += vDiff_right * c->controlPeriod / 2;
+			i_vDiff_left += vDiff_left * c->controlPeriod / 2;
+
 			//Asservissement en vitesse : obtention de la vitesse de consigne reelle
-			p_str = (int)limit(p_str + limit(c->KPVit * vDiff_str + c->KIVit * i_vDiff_str - p_str, c->maxPowerDerivative * c->controlPeriod), c->maxPower);
-			p_rot = (int)limit(p_rot + limit(c->KPVit * vDiff_rot + c->KIVit * i_vDiff_rot - p_rot, c->maxPowerDerivative * c->controlPeriod), c->maxPower);
+			p_right = (int)limit(p_right + limit(c->KPVit * vDiff_right + c->KIVit * i_vDiff_right - p_right, c->maxPowerDerivative * c->controlPeriod), c->maxPower);
+			p_left = (int)limit(p_left + limit(c->KPVit * vDiff_left + c->KIVit * i_vDiff_left - p_left, c->maxPowerDerivative * c->controlPeriod), c->maxPower);
 
 		}
 
 		//Envoi de la commande aux moteurs
-		motor[motorRight] = (c->rightMotorReversed ? -1 : 1) * (p_str + p_rot);
-		motor[motorLeft] = (c->leftMotorReversed ? -1 : 1) * (p_str - p_rot);
+		motor[motorRight] = (c->rightMotorReversed ? -1 : 1) * p_right;
+		motor[motorLeft] = (c->leftMotorReversed ? -1 : 1) * p_left;
+
+		datalogAddValue(0, 100*v_rot);
+		datalogAddValue(1, 50*((v_right - vDiff_right) - (v_left - vDiff_left)));
 
 		//Mise a jour des anciennes variables
 		old_posRight = posRight;
 		old_posLeft = posLeft;
+
+		writeDebugStreamLine("%7.3f", i_dist_adapted*c->KIPos);
+
 	} while (__mvtState != NOMVT);
 
 	motor[motorLeft] = 0;

@@ -30,7 +30,7 @@ task displayPos() {
 		displayBigTextLine(1, "X %5.1f", pos.x);
 		displayBigTextLine(3, "Y %5.1f", pos.y);
 		displayBigTextLine(5, "O %5.1f", pos.orientation);
-		writeDebugStreamLine("X:%5.1f Y:%5.1f O:%5.1f", pos.x, pos.y, pos.orientation);
+		//writeDebugStreamLine("X:%5.1f Y:%5.1f O:%5.1f", pos.x, pos.y, pos.orientation);
 	}
 }
 
@@ -60,7 +60,8 @@ void throw() {
 }
 
 task emergencyStop() {
-	while (SensorValue[redButton] == 0 && time1[T3] < 99000) { wait1Msec(20); }
+	clearTimer(T3);
+	while (SensorValue[redButton] != 1 && time1[T3] < 99000) { wait1Msec(20); }
 	stopAllTasks();
 }
 
@@ -69,9 +70,25 @@ task main()
   initConfig(OBELIX);
   initPosition(true);
   while (SensorValue[redButton] == 1) { wait1Msec(20); }
-  wait1Msec(100);
+  wait1Msec(500);
  	startTask(displayPos);
+  startTask(avoidObstacles);
   startTask(emergencyStop);
+
+  __position.orientation = 0;
+  moveTo(200, -300);
+  rotateTo(0);
+  moveTo(200, 300);
+  rotateTo(0);
+  moveTo(-200, -300);
+  rotateTo(0);
+  moveTo(-200, 300);
+  rotateTo(0);
+  moveTo(0, 0);
+  rotateTo(0);
+
+  while (true) {}
+
   wait1Msec(7000);
 
  	moveTo_backward(0, -200);

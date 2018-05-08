@@ -76,13 +76,13 @@ void initPosition(bool isGreenSide) {
 	getConfig(&c);
 
   if (isGreenSide) {
-    __position.x = c->initialX_GreenSide * c->mmPerEncode;
-    __position.y = c->initialY_GreenSide * c->mmPerEncode;
+    __position.x = c->initialX_GreenSide / c->mmPerEncode;
+    __position.y = c->initialY_GreenSide / c->mmPerEncode;
     __position.orientation = c->initialOrientation_GreenSide * PI / 180;
   }
   else {
-    __position.x = c->initialX_OrangeSide * c->mmPerEncode;
-    __position.y = c->initialY_OrangeSide * c->mmPerEncode;
+    __position.x = c->initialX_OrangeSide / c->mmPerEncode;
+    __position.y = c->initialY_OrangeSide / c->mmPerEncode;
     __position.orientation = c->initialOrientation_OrangeSide * PI / 180;
   }
   nMotorEncoder[motorLeft] = 0;

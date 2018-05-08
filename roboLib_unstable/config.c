@@ -34,6 +34,7 @@ struct Config {
 	float KPPos; //Coefficient proportionnel : (mm / ms) / mm = ms^-1
 	float KIPos; //Coefficient integrateur : (mm / ms) / (mm * ms) = ms^-2
 	float integDist; //Distance a la cible a partir de laquelle l'integrateur se lance (mm)
+	float maxEffectiveDist; //Distance maximale utilisee dans l'asservissement, pour limiter les consignes a tres grande distance
 
 	//Asservissement en vitesse : vitesse voulue -> puissance envoyée
 	float KPVit; //Coefficient proportionnel : pow / (mm / ms)
@@ -43,9 +44,6 @@ struct Config {
 	float maxAccel; //mm / ms^2
 	float maxPower; //pow
 	float maxPowerDerivative; //pow / ms
-
-	unsigned int anglePriorityFactor; //Gere la preponderance du mouvement de rotation sur celui d'avance droite
-	float rotateAttenuationCoeff; //Attenue la rotation dans les moveTo quand le robot est proche de la cible ; 0 = pas d'atténuation
 
 	float dist_closeEnough; //Precision toleree en distance a la cible : mm
 
@@ -119,8 +117,6 @@ void initConfig(enum Robot robot) {
 			__config.maxSpeed = 0.3;
 			__config.maxAccel = 0.0015;
 
-			__config.anglePriorityFactor = 3;
-			__config.rotateAttenuationCoeff = 5;
 			__config.dist_allowBackward = 50;
 
 			__config.KPVit = 140;
@@ -142,27 +138,26 @@ void initConfig(enum Robot robot) {
 			__config.sensorBack = true;
 			__config.securityDistance = 200;
 
-			__config.timeout = 10000;
+			__config.timeout = 100000;
 
 			__config.leftMotorReversed = true;
 			__config.rightMotorReversed = false;
-			__config.controlPeriod = 5;
-			__config.dist_closeEnough = 5;
+			__config.controlPeriod = 30;
+			__config.dist_closeEnough = 10;
 
-			__config.KPPos = 0.01;
-			__config.KIPos = 0.00007;
+			__config.KPPos = 0.005;
+			__config.KIPos = 0;
 			__config.integDist = 40;
-			__config.maxSpeed = 0.5;
-			__config.maxAccel = 0.005;
+			__config.maxEffectiveDist = 100;
+			__config.maxSpeed = 0.4;
+			__config.maxAccel = 0.002;
 
-			__config.anglePriorityFactor = 20;
-			__config.rotateAttenuationCoeff = 5;
 			__config.dist_allowBackward = 50;
 
-			__config.KPVit = 70;
-			__config.KIVit = 0.04;
+			__config.KPVit = 150;
+			__config.KIVit = 0.2;
 			__config.maxPower = 80;
-			__config.maxPowerDerivative = 0.5;
+			__config.maxPowerDerivative = 0.3;
 			break;
 		}
 	case TULLIUS: {
@@ -191,8 +186,6 @@ void initConfig(enum Robot robot) {
 			__config.maxSpeed = 0.4;
 			__config.maxAccel = 0.0015;
 
-			__config.anglePriorityFactor = 3;
-			__config.rotateAttenuationCoeff = 5;
 			__config.dist_allowBackward = 50;
 
 			__config.KPVit = 140;
